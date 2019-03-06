@@ -77,7 +77,7 @@ class RNN(nn.Module): # Implement a stacked vanilla RNN with Tanh nonlinearities
         self.FirstHidden_hidden = nn.Linear(hidden_size , hidden_size)
         
     
-        sublayer = nn.ModuleList([nn.Sequential(nn.Dropout(p = 1-dp_keep_prob, inplace=True),nn.Linear(hidden_size, hidden_size)),
+        sublayer = nn.ModuleList([nn.Dropout(p = 1-dp_keep_prob),nn.Linear(hidden_size, hidden_size),
                                       nn.Linear( hidden_size, hidden_size)])
         self.hidden_layers = clones(sublayer, self.num_layers - 1)
 
@@ -156,8 +156,8 @@ class RNN(nn.Module): # Implement a stacked vanilla RNN with Tanh nonlinearities
                                                      self.FirstHidden_hidden(hiddendict[timestep][0]))
             
             for i, layer in enumerate(self.hidden_layers):
-                hiddendict[timestep + 1][i+1] = torch.tanh(layer[0](hiddendict[timestep + 1][i]) 
-                                                           + layer[1](hiddendict[timestep][i+1]))
+                x = layer[0](hiddendict[timestep + 1][i])
+                hiddendict[timestep + 1][i+1] = torch.tanh(layer[1](x) + layer[2](hiddendict[timestep][i+1]))
                 
             logits_list.append(self.Wy(hiddendict[timestep + 1][self.num_layers-1]).unsqueeze(0))
         
