@@ -69,6 +69,9 @@ class RNN(nn.Module): # Implement a stacked vanilla RNN with Tanh nonlinearities
         self.batch_size = batch_size
         self.vocab_size = vocab_size
         self.hidden_size = hidden_size
+        self.p = 1 - dp_keep_prob
+        
+        self.drop = nn.Dropout(self.p)
 
         self.embedding = nn.Embedding(vocab_size, emb_size)
 
@@ -77,7 +80,7 @@ class RNN(nn.Module): # Implement a stacked vanilla RNN with Tanh nonlinearities
         self.FirstHidden_hidden = nn.Linear(hidden_size , hidden_size)
         
     
-        sublayer = nn.ModuleList([nn.Dropout(p = 1-dp_keep_prob),nn.Linear(hidden_size, hidden_size),
+        sublayer = nn.ModuleList([nn.Linear(hidden_size, hidden_size),
                                       nn.Linear( hidden_size, hidden_size)])
         self.hidden_layers = clones(sublayer, self.num_layers - 1)
 
@@ -89,10 +92,18 @@ class RNN(nn.Module): # Implement a stacked vanilla RNN with Tanh nonlinearities
         # TODO ========================
         # Initialize all the weights uniformly in the range [-0.1, 0.1]
         # and all the biases to 0 (in place)
-        if type(m) == nn.Linear or type(m) == nn.Embedding:
+        #if this is done performance is quite bad
+        #Weight for emmbedding and last layer initialize all the weights uniformly in the range [-0.1, 0.1]
+        #Weight for the reccurent part  uniformly in the range [-sqrt(1/nb hidden_unit), sqrt(1/nb hidden_unit)]
+        initrange = 0.1
+        if type(m) == nn.Linear:
             torch.nn.init.uniform_(m.weight, -math.sqrt(1/self.hidden_size), math.sqrt(1/self.hidden_size))
         if type(m) == nn.Linear:
             torch.nn.init.uniform_(m.bias, -math.sqrt(1/self.hidden_size), math.sqrt(1/self.hidden_size))
+        if type(m) == nn.Embedding:
+            torch.nn.init.uniform_(m.weight, -initrange, initrange)
+        self.Wy.bias.data.zero_()
+        self.Wy.weight.data.uniform_(-initrange, initrange)
        
 
     def init_hidden(self):
@@ -148,24 +159,24 @@ class RNN(nn.Module): # Implement a stacked vanilla RNN with Tanh nonlinearities
         
         hiddendict[0] = hidden
         
-        for timestep in range(self.seq_len):
+        for timestep in range(inputs.size(0)):
             hiddendict[timestep + 1] = {}
             
-            embedded = self.embedding(inputs[timestep])
+            embedded = self.drop(self.embedding(inputs[timestep]))
             hiddendict[timestep + 1][0] = torch.tanh(self.FirstHidden_input(embedded) + 
                                                      self.FirstHidden_hidden(hiddendict[timestep][0]))
             
             for i, layer in enumerate(self.hidden_layers):
-                x = layer[0](hiddendict[timestep + 1][i])
-                hiddendict[timestep + 1][i+1] = torch.tanh(layer[1](x) + layer[2](hiddendict[timestep][i+1]))
+                x = self.drop(hiddendict[timestep + 1][i])
+                hiddendict[timestep + 1][i+1] = torch.tanh(layer[0](x) + layer[1](hiddendict[timestep][i+1]))
                 
-            logits_list.append(self.Wy(hiddendict[timestep + 1][self.num_layers-1]).unsqueeze(0))
+            logits_list.append(self.Wy(self.drop(hiddendict[timestep + 1][self.num_layers-1])).unsqueeze(0))
         
         logits = torch.cat(logits_list, dim=0)
         hidden = torch.cat([hiddendict[self.seq_len][h].unsqueeze(0) for h in range(self.num_layers)], dim=0)
         
 
-        return logits.view(self.seq_len, self.batch_size, self.vocab_size), hidden
+        return logits.view(inputs.size(0), inputs.size(1), self.vocab_size), hidden
 
     def generate(self, input, hidden, generated_seq_len):
         # TODO ========================
@@ -211,6 +222,8 @@ class GRU(nn.Module): # Implement a stacked GRU RNN
         self.batch_size = batch_size
         self.vocab_size = vocab_size
         self.hidden_size = hidden_size
+        self.p = 1 - dp_keep_prob
+        self.drop = nn.Dropout(self.p)
 
         self.embedding = nn.Embedding(vocab_size, emb_size)
 
@@ -224,8 +237,7 @@ class GRU(nn.Module): # Implement a stacked GRU RNN
         self.First_Uh = nn.Linear(hidden_size, hidden_size)
         
 
-        sublayer = nn.ModuleList([nn.Dropout(p = 1-dp_keep_prob), 
-                                  nn.Linear(hidden_size, hidden_size),
+        sublayer = nn.ModuleList([nn.Linear(hidden_size, hidden_size),
                                   nn.Linear(hidden_size, hidden_size),
                                   nn.Linear(hidden_size, hidden_size),
                                   nn.Linear(hidden_size, hidden_size),
@@ -245,10 +257,18 @@ class GRU(nn.Module): # Implement a stacked GRU RNN
         # TODO ========================
         # Initialize all the weights uniformly in the range [-0.1, 0.1]
         # and all the biases to 0 (in place)
-        if type(m) == nn.Linear or type(m) == nn.Embedding:
+        #if this is done performance is quite bad
+        #Weight for emmbedding and last layer initialize all the weights uniformly in the range [-0.1, 0.1]
+        #Weight for the reccurent part  uniformly in the range [-sqrt(1/nb hidden_unit), sqrt(1/nb hidden_unit)]
+        initrange = 0.1
+        if type(m) == nn.Linear:
             torch.nn.init.uniform_(m.weight, -math.sqrt(1/self.hidden_size), math.sqrt(1/self.hidden_size))
         if type(m) == nn.Linear:
             torch.nn.init.uniform_(m.bias, -math.sqrt(1/self.hidden_size), math.sqrt(1/self.hidden_size))
+        if type(m) == nn.Embedding:
+            torch.nn.init.uniform_(m.weight, -initrange, initrange)
+        self.Wy.bias.data.zero_()
+        self.Wy.weight.data.uniform_(-initrange, initrange)
 
 
     def init_hidden(self):
@@ -265,129 +285,28 @@ class GRU(nn.Module): # Implement a stacked GRU RNN
         logits_list = []
         hiddendict[0] = hidden
 
-        for timestep in range(self.seq_len):
+        for timestep in range(inputs.size(0)):
             hiddendict[timestep + 1] = {}
 
-            embedded = self.embedding(inputs[timestep])
+            embedded = self.drop(self.embedding(inputs[timestep]))
             reset = torch.sigmoid(self.First_Wr(embedded) + self.First_Ur(hiddendict[timestep][0]))
             forget =  torch.sigmoid(self.First_Wz(embedded) + self.First_Uz(hiddendict[timestep][0]))
             hidden_mod = torch.tanh(self.First_Wh(embedded) + self.First_Uh(reset*hiddendict[timestep][0]))
             hiddendict[timestep + 1][0] = (1-forget)*hidden_mod + forget*hiddendict[timestep][0]
 
             for i, layer in enumerate(self.hidden_layers):
-                x = layer[0](hiddendict[timestep + 1][i]) #apply Dropout
-                reset = torch.sigmoid(layer[1](x) + layer[2](hiddendict[timestep][i+1]))
-                forget =  torch.sigmoid(layer[3](x) + layer[4](hiddendict[timestep][i+1]))
-                hidden_mod = torch.tanh(layer[5](x) + layer[6](reset*hiddendict[timestep][i+1]))
-                hiddendict[timestep + 1][i+1] = (1-forget)*hidden_mod + forget*hiddendict[timestep][i+1]
-
-            logits_list.append(self.Wy(hiddendict[timestep + 1][self.num_layers-1]).unsqueeze(0))
-
-        logits = torch.cat(logits_list, dim=0)
-        hidden = torch.cat([hiddendict[self.seq_len][h].unsqueeze(0) for h in range(self.num_layers)], dim=0)
-
-        return logits.view(self.seq_len, self.batch_size, self.vocab_size), hidden
-
-    def generate(self, input, hidden, generated_seq_len):
-        # TODO ========================
-    
-        return samples
-    
-class FastGRU(nn.Module): # Faster version of the GRU, follow pytorch GRU not the GRU we are asked to implement
-    """
-    Follow the same instructions as for RNN (above), but use the equations for 
-    GRU, not Vanilla RNN.
-    """
-    def __init__(self, emb_size, hidden_size, seq_len, batch_size, vocab_size, num_layers, dp_keep_prob):
-        super(GRU, self).__init__()
-
-        # TODO ========================
-        self.seq_len = seq_len
-        self.num_layers = num_layers
-        self.batch_size = batch_size
-        self.vocab_size = vocab_size
-        self.hidden_size = hidden_size
-
-        self.embedding = nn.Embedding(vocab_size, emb_size)
-
-        self.x2h = nn.Linear(emb_size, 3*hidden_size)
-        self.h2h = nn.Linear(hidden_size, 3*hidden_size)
-        
-        
-
-        sublayer = nn.ModuleList([nn.Dropout(p = 1-dp_keep_prob), 
-                                  nn.Linear(hidden_size, 3*hidden_size),
-                                  nn.Linear(hidden_size, 3*hidden_size)])
-        
-        
-
-        self.hidden_layers = clones(sublayer, self.num_layers - 1)
-
-        self.Wy = nn.Linear(hidden_size, vocab_size)
-
-        self.apply(self.init_weights_uniform)
-
-
-    def init_weights_uniform(self, m):
-        # TODO ========================
-        # Initialize all the weights uniformly in the range [-0.1, 0.1]
-        # and all the biases to 0 (in place)
-        if type(m) == nn.Linear or type(m) == nn.Embedding:
-            torch.nn.init.uniform_(m.weight, -math.sqrt(1/self.hidden_size), math.sqrt(1/self.hidden_size))
-        if type(m) == nn.Linear:
-            torch.nn.init.uniform_(m.bias, -math.sqrt(1/self.hidden_size), math.sqrt(1/self.hidden_size))
-
-
-    def init_hidden(self):
-        # TODO ========================
-        self.inititial_hidden = torch.zeros(self.num_layers, self.batch_size, self.hidden_size)
-            
-        return self.inititial_hidden
-
-    def forward(self, inputs, hidden):
-        # TODO ========================
-
-        logits_list = []
-        hiddendict = {}
-        logits_list = []
-        hiddendict[0] = hidden
-        embedded = self.embedding(inputs)
-
-        for timestep in range(self.seq_len):
-            hiddendict[timestep + 1] = {}
-
-            
-            gate_x = self.x2h(embedded[timestep]) 
-            gate_h = self.h2h(hiddendict[timestep][0])
-            
-            i_r, i_i, i_n = gate_x.chunk(3, 1)
-            h_r, h_i, h_n = gate_h.chunk(3, 1)
-            
-            resetgate = torch.sigmoid(i_r + h_r)
-            inputgate = torch.sigmoid(i_i + h_i)
-            newgate = torch.tanh(i_n + (resetgate * h_n))
-
-            hiddendict[timestep + 1][0] = newgate + inputgate * (hiddendict[timestep][0] - newgate)
-
-            for i, layer in enumerate(self.hidden_layers):
-                x = layer[0](hiddendict[timestep + 1][i]) #apply Dropout
-                gate_x = layer[1](x) 
-                gate_h = layer[2](hiddendict[timestep][i+1])
+                x = self.drop(hiddendict[timestep + 1][i]) #apply Dropout
+                reset = torch.sigmoid(layer[0](x) + layer[1](hiddendict[timestep][i+1]))
+                forget =  torch.sigmoid(layer[2](x) + layer[3](hiddendict[timestep][i+1]))
+                hidden_mod = torch.tanh(layer[4](x) + layer[5](reset*hiddendict[timestep][i+1]))
+                hiddendict[timestep + 1][i+1] = forget*hidden_mod + (1-forget)*hiddendict[timestep][i+1]
                 
-                i_r, i_i, i_n = gate_x.chunk(3, 1)
-                h_r, h_i, h_n = gate_h.chunk(3, 1)
-            
-                resetgate = torch.sigmoid(i_r + h_r)
-                inputgate = torch.sigmoid(i_i + h_i)
-                newgate = torch.tanh(i_n + (resetgate * h_n))
-                hiddendict[timestep + 1][i+1] = newgate + inputgate * (hiddendict[timestep][i+1] - newgate)
-
-            logits_list.append(self.Wy(hiddendict[timestep + 1][self.num_layers-1]).unsqueeze(0))
+            logits_list.append(self.Wy(self.drop(hiddendict[timestep + 1][self.num_layers-1])).unsqueeze(0))
 
         logits = torch.cat(logits_list, dim=0)
         hidden = torch.cat([hiddendict[self.seq_len][h].unsqueeze(0) for h in range(self.num_layers)], dim=0)
 
-        return logits.view(self.seq_len, self.batch_size, self.vocab_size), hidden
+        return logits.view(inputs.size(0), inputs.size(1), self.vocab_size), hidden
 
     def generate(self, input, hidden, generated_seq_len):
         # TODO ========================
