@@ -204,6 +204,7 @@ def _read_words(filename):
     with open(filename, "r") as f:
       return f.read().replace("\n", "<eos>").split()
 
+
 def _build_vocab(filename):
     data = _read_words(filename)
 
@@ -216,9 +217,11 @@ def _build_vocab(filename):
 
     return word_to_id, id_to_word
 
+
 def _file_to_word_ids(filename, word_to_id):
     data = _read_words(filename)
     return [word_to_id[word] for word in data if word in word_to_id]
+
 
 # Processes the raw data from text files
 def ptb_raw_data(data_path=None, prefix="ptb"):
@@ -231,6 +234,7 @@ def ptb_raw_data(data_path=None, prefix="ptb"):
     valid_data = _file_to_word_ids(valid_path, word_to_id)
     test_data = _file_to_word_ids(test_path, word_to_id)
     return train_data, valid_data, test_data, word_to_id, id_2_word
+
 
 # Yields minibatches of data
 def ptb_iterator(raw_data, batch_size, num_steps):
@@ -254,15 +258,18 @@ def ptb_iterator(raw_data, batch_size, num_steps):
 
 
 class Batch:
-    "Data processing for the transformer. This class adds a mask to the data."
+    """
+    Data processing for the transformer. This class adds a mask to the data.
+    """
     def __init__(self, x, pad=-1):
         self.data = x
         self.mask = self.make_mask(self.data, pad)
     
     @staticmethod
     def make_mask(data, pad):
-        "Create a mask to hide future words."
-
+        """
+        Create a mask to hide future words.
+        """
         def subsequent_mask(size):
             """ helper function for creating the masks. """
             attn_shape = (1, size, size)
@@ -309,15 +316,15 @@ elif args.model == 'TRANSFORMER':
     else:
         # Note that we're using num_layers and hidden_size to mean slightly 
         # different things here than in the RNNs.
-        # Also, the Transformer also has other hyperparameters 
+        # Also, the Transformer also has other hyper-parameters
         # (such as the number of attention heads) which can change it's behavior.
         model = TRANSFORMER(vocab_size=vocab_size, n_units=args.hidden_size, 
                             n_blocks=args.num_layers, dropout=1.-args.dp_keep_prob) 
     # these 3 attributes don't affect the Transformer's computations; 
     # they are only used in run_epoch
-    model.batch_size=args.batch_size
-    model.seq_len=args.seq_len
-    model.vocab_size=vocab_size
+    model.batch_size = args.batch_size
+    model.seq_len = args.seq_len
+    model.vocab_size = vocab_size
 else:
   print("Model type not recognized.")
 
@@ -381,7 +388,7 @@ def run_epoch(model, data, is_train=False, lr=1.0):
             batch = Batch(torch.from_numpy(x).long().to(device))
             model.zero_grad()
             outputs = model.forward(batch.data, batch.mask).transpose(1,0)
-            #print ("outputs.shape", outputs.shape)
+            # print ("outputs.shape", outputs.shape)
         else:
             inputs = torch.from_numpy(x.astype(np.int64)).transpose(0, 1).contiguous().to(device)#.cuda()
             model.zero_grad()
@@ -395,7 +402,7 @@ def run_epoch(model, data, is_train=False, lr=1.0):
         # This line currently averages across all the sequences in a mini-batch 
         # and all time-steps of the sequences.
         # For problem 5.3, you will (instead) need to compute the average loss 
-        #at each time-step separately. 
+        # at each time-step separately.
         loss = loss_fn(outputs.contiguous().view(-1, model.vocab_size), tt)
         costs += loss.data.item() * model.seq_len
         losses.append(costs)
@@ -412,11 +419,9 @@ def run_epoch(model, data, is_train=False, lr=1.0):
                     if p.grad is not None:
                         p.data.add_(-lr, p.grad.data)
             if step % (epoch_size // 10) == 10:
-                print('step: '+ str(step) + '\t' \
-                    + "loss (sum over all examples' seen this epoch)": '+ str(costs) + '\t' \
-                    + 'speed (wps):' + str(iters * model.batch_size / (time.time() - start_time)))
+                print('step: ' + str(step) + '\t' + "loss (sum over all examples' seen this epoch): "
+                      + str(costs) + '\t' + 'speed (wps):' + str(iters * model.batch_size / (time.time() - start_time)))
     return np.exp(costs / iters), losses
-
 
 
 ###############################################################################
@@ -453,7 +458,6 @@ for epoch in range(num_epochs):
     # RUN MODEL ON VALIDATION DATA
     val_ppl, val_loss = run_epoch(model, valid_data)
 
-
     # SAVE MODEL IF IT'S THE BEST SO FAR
     if val_ppl < best_val_so_far:
         best_val_so_far = val_ppl
@@ -476,21 +480,21 @@ for epoch in range(num_epochs):
     val_losses.extend(val_loss)
     times.append(time.time() - t0)
     log_str = 'epoch: ' + str(epoch) + '\t' \
-            + 'train ppl: ' + str(train_ppl) + '\t' \
-            + 'val ppl: ' + str(val_ppl)  + '\t' \
-            + 'best val: ' + str(best_val_so_far) + '\t' \
-            + 'time (s) spent in epoch: ' + str(times[-1])
+              + 'train ppl: ' + str(train_ppl) + '\t' \
+              + 'val ppl: ' + str(val_ppl) + '\t' \
+              + 'best val: ' + str(best_val_so_far) + '\t' \
+              + 'time (s) spent in epoch: ' + str(times[-1])
     print(log_str)
-    with open (os.path.join(args.save_dir, 'log.txt'), 'a') as f_:
-        f_.write(log_str+ '\n')
+    with open(os.path.join(args.save_dir, 'log.txt'), 'a') as f_:
+        f_.write(log_str + '\n')
 
 # SAVE LEARNING CURVES
 lc_path = os.path.join(args.save_dir, 'learning_curves.npy')
 print('\nDONE\n\nSaving learning curves to '+lc_path)
-np.save(lc_path, {'train_ppls':train_ppls, 
-                  'val_ppls':val_ppls, 
-                  'train_losses':train_losses,
-                  'val_losses':val_losses})
+np.save(lc_path, {'train_ppls': train_ppls,
+                  'val_ppls': val_ppls,
+                  'train_losses': train_losses,
+                  'val_losses': val_losses})
 # NOTE ==============================================
 # To load these, run 
 # >>> x = np.load(lc_path)[()]
