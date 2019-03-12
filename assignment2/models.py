@@ -30,11 +30,15 @@ import matplotlib.pyplot as plt
 
 
 def clones(module, N):
-    "A helper function for producing N identical layers (each with their own parameters)."
+    """
+    A helper function for producing N identical layers (each with their own parameters).
+    """
     return nn.ModuleList([copy.deepcopy(module) for _ in range(N)])
 
+
 # Problem 1
-class RNN(nn.Module): # Implement a stacked vanilla RNN with Tanh nonlinearities.
+# Implement a stacked vanilla RNN with Tanh nonlinearities.
+class RNN(nn.Module):
     def __init__(self, emb_size, hidden_size, seq_len, batch_size, vocab_size, num_layers, dp_keep_prob):
         """
         emb_size:     The numvwe of units in the input embeddings
@@ -75,13 +79,10 @@ class RNN(nn.Module): # Implement a stacked vanilla RNN with Tanh nonlinearities
 
         self.embedding = nn.Embedding(vocab_size, emb_size)
 
-    
-        self.FirstHidden_input = nn.Linear(emb_size , hidden_size)
-        self.FirstHidden_hidden = nn.Linear(hidden_size , hidden_size)
-        
-    
-        sublayer = nn.ModuleList([nn.Linear(hidden_size, hidden_size),
-                                      nn.Linear( hidden_size, hidden_size)])
+        self.FirstHidden_input = nn.Linear(emb_size, hidden_size)
+        self.FirstHidden_hidden = nn.Linear(hidden_size, hidden_size)
+
+        sublayer = nn.ModuleList([nn.Linear(hidden_size, hidden_size), nn.Linear(hidden_size, hidden_size)])
         self.hidden_layers = clones(sublayer, self.num_layers - 1)
 
         self.Wy = nn.Linear(hidden_size, vocab_size)
@@ -92,9 +93,9 @@ class RNN(nn.Module): # Implement a stacked vanilla RNN with Tanh nonlinearities
         # TODO ========================
         # Initialize all the weights uniformly in the range [-0.1, 0.1]
         # and all the biases to 0 (in place)
-        #if this is done performance is quite bad
-        #Weight for emmbedding and last layer initialize all the weights uniformly in the range [-0.1, 0.1]
-        #Weight for the reccurent part  uniformly in the range [-sqrt(1/nb hidden_unit), sqrt(1/nb hidden_unit)]
+        # if this is done performance is quite bad
+        # Weight for emmbedding and last layer initialize all the weights uniformly in the range [-0.1, 0.1]
+        # Weight for the reccurent part  uniformly in the range [-sqrt(1/nb hidden_unit), sqrt(1/nb hidden_unit)]
         initrange = 0.1
         if type(m) == nn.Linear:
             torch.nn.init.uniform_(m.weight, -math.sqrt(1/self.hidden_size), math.sqrt(1/self.hidden_size))
@@ -105,18 +106,16 @@ class RNN(nn.Module): # Implement a stacked vanilla RNN with Tanh nonlinearities
         self.Wy.bias.data.zero_()
         self.Wy.weight.data.uniform_(-initrange, initrange)
        
-
     def init_hidden(self):
         # TODO ========================
         # initialize the hidden states to zero
         """
         This is used for the first mini-batch in an epoch, only.
         """
-        #if we do what is asked here the initial hidden state will not be learned but rather fixed at 0.
-        self.inititial_hidden = torch.zeros(self.num_layers, self.batch_size, self.hidden_size, requires_grad = True)
+        # if we do what is asked here the initial hidden state will not be learned but rather fixed at 0.
+        self.inititial_hidden = torch.zeros(self.num_layers, self.batch_size, self.hidden_size, requires_grad=True)
             
         return self.inititial_hidden
-
 
     def forward(self, inputs, hidden):
         # TODO ========================
@@ -174,7 +173,6 @@ class RNN(nn.Module): # Implement a stacked vanilla RNN with Tanh nonlinearities
         
         logits = torch.cat(logits_list, dim=0)
         hidden = torch.cat([hiddendict[self.seq_len][h].unsqueeze(0) for h in range(self.num_layers)], dim=0)
-        
 
         return logits.view(inputs.size(0), inputs.size(1), self.vocab_size), hidden
 
@@ -208,7 +206,8 @@ class RNN(nn.Module): # Implement a stacked vanilla RNN with Tanh nonlinearities
 
 
 # Problem 2
-class GRU(nn.Module): # Implement a stacked GRU RNN
+# Implement a stacked GRU RNN
+class GRU(nn.Module):
     """
     Follow the same instructions as for RNN (above), but use the equations for 
     GRU, not Vanilla RNN.
@@ -235,7 +234,6 @@ class GRU(nn.Module): # Implement a stacked GRU RNN
         
         self.First_Wh = nn.Linear(emb_size, hidden_size)
         self.First_Uh = nn.Linear(hidden_size, hidden_size)
-        
 
         sublayer = nn.ModuleList([nn.Linear(hidden_size, hidden_size),
                                   nn.Linear(hidden_size, hidden_size),
@@ -243,8 +241,6 @@ class GRU(nn.Module): # Implement a stacked GRU RNN
                                   nn.Linear(hidden_size, hidden_size),
                                   nn.Linear(hidden_size, hidden_size),
                                   nn.Linear(hidden_size, hidden_size)])
-        
-        
 
         self.hidden_layers = clones(sublayer, self.num_layers - 1)
 
@@ -252,14 +248,13 @@ class GRU(nn.Module): # Implement a stacked GRU RNN
 
         self.apply(self.init_weights_uniform)
 
-
     def init_weights_uniform(self, m):
         # TODO ========================
         # Initialize all the weights uniformly in the range [-0.1, 0.1]
         # and all the biases to 0 (in place)
-        #if this is done performance is quite bad
-        #Weight for emmbedding and last layer initialize all the weights uniformly in the range [-0.1, 0.1]
-        #Weight for the reccurent part  uniformly in the range [-sqrt(1/nb hidden_unit), sqrt(1/nb hidden_unit)]
+        # if this is done performance is quite bad
+        # Weight for emmbedding and last layer initialize all the weights uniformly in the range [-0.1, 0.1]
+        # Weight for the reccurent part  uniformly in the range [-sqrt(1/nb hidden_unit), sqrt(1/nb hidden_unit)]
         initrange = 0.1
         if type(m) == nn.Linear:
             torch.nn.init.uniform_(m.weight, -math.sqrt(1/self.hidden_size), math.sqrt(1/self.hidden_size))
@@ -269,7 +264,6 @@ class GRU(nn.Module): # Implement a stacked GRU RNN
             torch.nn.init.uniform_(m.weight, -initrange, initrange)
         self.Wy.bias.data.zero_()
         self.Wy.weight.data.uniform_(-initrange, initrange)
-
 
     def init_hidden(self):
         # TODO ========================
@@ -347,33 +341,32 @@ The complete model consists of the embeddings, the stacked transformer blocks,
 and a linear layer followed by a softmax.
 """
 
-#This code has been modified from an open-source project, by David Krueger.
-#The original license is included below:
-#MIT License
+# This code has been modified from an open-source project, by David Krueger.
+# The original license is included below:
+# MIT License
 #
-#Copyright (c) 2018 Alexander Rush
+# Copyright (c) 2018 Alexander Rush
 #
-#Permission is hereby granted, free of charge, to any person obtaining a copy
-#of this software and associated documentation files (the "Software"), to deal
-#in the Software without restriction, including without limitation the rights
-#to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-#copies of the Software, and to permit persons to whom the Software is
-#furnished to do so, subject to the following conditions:
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
 #
-#The above copyright notice and this permission notice shall be included in all
-#copies or substantial portions of the Software.
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
 #
-#THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-#IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-#FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-#AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-#LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-#OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-#SOFTWARE.
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
 
+# ----------------------------------------------------------------------------------
 
-
-#----------------------------------------------------------------------------------
 
 # TODO: implement this class
 class MultiHeadedAttention(nn.Module):
@@ -403,15 +396,12 @@ class MultiHeadedAttention(nn.Module):
         # generating the "attention values" (i.e. A_i in the .tex)
         # Also apply dropout to the attention values.
 
-        return # size: (batch_size, seq_len, self.n_units)
+        # size: (batch_size, seq_len, self.n_units)
+        return
 
-
-
-
-
-
-#----------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------------
 # The encodings of elements of the input sequence
+
 
 class WordEmbedding(nn.Module):
     def __init__(self, n_units, vocab):
@@ -420,7 +410,6 @@ class WordEmbedding(nn.Module):
         self.n_units = n_units
 
     def forward(self, x):
-        #print (x)
         return self.lut(x) * math.sqrt(self.n_units)
 
 
@@ -445,10 +434,8 @@ class PositionalEncoding(nn.Module):
         return self.dropout(x)
 
 
-
-#----------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------------
 # The TransformerBlock and the full Transformer
-
 
 class TransformerBlock(nn.Module):
     def __init__(self, size, self_attn, feed_forward, dropout):
@@ -490,9 +477,10 @@ class FullTransformer(nn.Module):
         return F.log_softmax(self.output_layer(self.transformer_stack(embeddings, mask)), dim=-1)
 
 
-def make_model(vocab_size, n_blocks=6, 
-               n_units=512, n_heads=16, dropout=0.1):
-    "Helper: Construct a model from hyperparameters."
+def make_model(vocab_size, n_blocks=6, n_units=512, n_heads=16, dropout=0.1):
+    """
+    Helper: Construct a model from hyper-parameters.
+    """
     c = copy.deepcopy
     attn = MultiHeadedAttention(n_heads, n_units)
     ff = MLP(n_units, dropout)
@@ -511,7 +499,7 @@ def make_model(vocab_size, n_blocks=6,
     return model
 
 
-#----------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------------
 # Data processing
 
 def subsequent_mask(size):
@@ -519,6 +507,7 @@ def subsequent_mask(size):
     attn_shape = (1, size, size)
     subsequent_mask = np.triu(np.ones(attn_shape), k=1).astype('uint8')
     return torch.from_numpy(subsequent_mask) == 0
+
 
 class Batch:
     "Object for holding a batch of data with mask during training."
@@ -535,11 +524,13 @@ class Batch:
         return mask
 
 
-#----------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------------
 # Some standard modules
 
 class LayerNorm(nn.Module):
-    "layer normalization, as in: https://arxiv.org/abs/1607.06450"
+    """
+    layer normalization, as in: https://arxiv.org/abs/1607.06450
+    """
     def __init__(self, features, eps=1e-6):
         super(LayerNorm, self).__init__()
         self.a_2 = nn.Parameter(torch.ones(features))
@@ -563,7 +554,9 @@ class ResidualSkipConnectionWithLayerNorm(nn.Module):
         self.dropout = nn.Dropout(dropout)
 
     def forward(self, x, sublayer):
-        "Apply residual connection to any sublayer with the same size."
+        """
+        Apply residual connection to any sublayer with the same size.
+        """
         return x + self.dropout(sublayer(self.norm(x)))
 
 
@@ -579,4 +572,3 @@ class MLP(nn.Module):
 
     def forward(self, x):
         return self.w_2(self.dropout(F.relu(self.w_1(x))))
-
