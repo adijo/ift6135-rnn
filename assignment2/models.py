@@ -384,24 +384,74 @@ class MultiHeadedAttention(nn.Module):
         self.d_k = n_units // n_heads
         # This requires the number of n_heads to evenly divide n_units.
         assert n_units % n_heads == 0
-        self.n_units = n_units
+        self.n_units = n_units 
+        self.n_heads = n_heads
+        self.dropout_rate = dropout
 
-        # TODO: create/initialize any necessary parameters or layers
+        self.dropout = nn.Dropout(p=dropout)
+
+		# TODO: create/initialize any necessary parameters or layers
         # Initialize all weights and biases uniformly in the range [-k, k],
         # where k is the square root of 1/n_units.
-        # Note: the only Pytorch modules you are allowed to use are nn.Linear
-        # and nn.Dropout
+		
+        self.V = nn.ModuleList([nn.Linear(n_units,self.d_k) for i in range(n_heads)])
+        self.Q = nn.ModuleList([nn.Linear(n_units,self.d_k) for i in range(n_heads)])
+        self.K = nn.ModuleList([nn.Linear(n_units,self.d_k) for i in range(n_heads)])
 
+        self.O = nn.Linear(n_units,n_units)
+
+        self.apply(self.init_weights)
+             
+    def init_weights(self, m):
+        # TODO ========================
+         # Initialize all weights and biases uniformly in the range [-k, k],
+        # where k is the square root of 1/n_units.
+        if type(m) == nn.Linear:
+            torch.nn.init.uniform_(m.weight, -math.sqrt(1/m.out_features), math.sqrt(1/m.out_features))
+            torch.nn.init.uniform_(m.bias, -math.sqrt(1/m.out_features), math.sqrt(1/m.out_features))
+
+        
     def forward(self, query, key, value, mask=None):
         # TODO: implement the masked multi-head attention.
-        # query, key, and value all have size: (batch_size, seq_len, self.n_units)
+        # query, key, and value all have size: (batch_size, seq_len, self.n_units, self.d_k)
         # mask has size: (batch_size, seq_len, seq_len)
-        # As described in the .tex, apply input masking to the softmax
-        # generating the "attention values" (i.e. A_i in the .tex)
+        # As described in the .tex, apply input masking to the softt)
         # Also apply dropout to the attention values.
+        self.v = []
+        self.q = []
+        self.k = []
+        self.complete_attention = torch.empty((0,0)).cuda()
+        for i in range(0,self.n_heads):
+            self.v.append(self.V[i](query)) #Q*W_v[i] + b_v
+            self.q.append(self.Q[i](query)) #Q*W_q[i] + b_q
+            self.k.append(self.K[i](query)) #Q*W_k[i] + b_k
+            self.complete_attention = torch.cat((self.complete_attention, self.attention(self.q[i],self.k[i],self.v[i], mask)), dim=2)
 
-        # size: (batch_size, seq_len, self.n_units)
-        return
+        self.o = self.O(self.complete_attention) # Attention = concat(Attention[1] ... Attention[n]*W_o + b_o)
+        return self.o# size: (batch_size, seq_len, self.n_units)
+
+    def stable_softmax(self, x, s): #X is the input vector, s is the dropout mask
+        s = s.float() #128 x 35 x 35
+
+        #This implentation had crazy validation / train ppl. epoch: 21    train ppl: 1.1572353641563802    val ppl: 1.4495772582466449. 
+        #It acts as if there was not mask at all, and the predictions are made using all the 35 words instead of only the previous words.
+        #x_tilde = x * s - 1e-9*(1-s)
+        
+        #Implementation of the mask, as specified in the paper:
+        x_tilde = x.masked_fill(s==0, -float("inf")) #Paper is clear on the fact the the masked value should be -inf before applying the softmax https://arxiv.org/pdf/1706.03762.pdf
+        exp_x_tilde = torch.exp(x_tilde)
+        sum_x_tilde = torch.sum(exp_x_tilde,dim=2)
+        sum_x_tilde = sum_x_tilde.unsqueeze(dim=2)
+        result = exp_x_tilde / sum_x_tilde
+        return result
+
+    def attention(self, Q, K, V, s):
+        K_t = K.transpose(1,2)
+        qkt_on_dk = torch.matmul(Q, K_t)/math.sqrt(self.d_k)
+        qkt_on_dk_ss = self.stable_softmax(qkt_on_dk,s)
+        qkt_on_dk_ss = self.dropout(qkt_on_dk_ss)
+        res = torch.matmul(qkt_on_dk_ss,V)
+        return res
 
 
 # ----------------------------------------------------------------------------------
