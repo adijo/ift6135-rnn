@@ -438,7 +438,11 @@ class MultiHeadedAttention(nn.Module):
         #x_tilde = x * s - 1e-9*(1-s)
         
         #Implementation of the mask, as specified in the paper:
-        x_tilde = x.masked_fill(s==0, -float("inf")) #Paper is clear on the fact the the masked value should be -inf before applying the softmax https://arxiv.org/pdf/1706.03762.pdf
+        #x_tilde = x.masked_fill(s==0, -float("inf")) #Paper is clear on the fact the the masked value should be -inf before applying the softmax https://arxiv.org/pdf/1706.03762.pdf
+        
+        #Appently I just did a typo. But the formula x * s is clearly not equivalent to this one.
+        x_tilde = x * s - 1e9*(1-s)
+        
         exp_x_tilde = torch.exp(x_tilde)
         sum_x_tilde = torch.sum(exp_x_tilde,dim=2)
         sum_x_tilde = sum_x_tilde.unsqueeze(dim=2)
