@@ -160,9 +160,8 @@ argsdict['code_file'] = sys.argv[0]
 # name for the experimental dir
 print("\n########## Setting Up Experiment ######################")
 flags = [flag.lstrip('--') for flag in sys.argv[1:]]
-experiment_path = os.path.join(args.save_dir+'_'.join([argsdict['model'],
-                                         argsdict['optimizer']] 
-                                         + flags))
+current_script_path = os.path.dirname(os.path.realpath(__file__))
+experiment_path = os.path.join(os.path.sep, current_script_path, args.save_dir, '_'.join([argsdict['model'], argsdict['optimizer']] + flags))
 
 # Increment a counter so that previous results with the same args will not
 # be overwritten. Comment out the next four lines if you only want to keep
@@ -173,10 +172,11 @@ while os.path.exists(experiment_path + "_" + str(i)):
 experiment_path = experiment_path + "_" + str(i)
 
 # Creates an experimental directory and dumps all the args to a text file
-os.mkdir(experiment_path)
-print ("\nPutting log in %s"%experiment_path)
+
+os.makedirs(experiment_path)
+print("\nPutting log in %s" % experiment_path)
 argsdict['save_dir'] = experiment_path
-with open (os.path.join(experiment_path,'exp_config.txt'), 'w') as f:
+with open(os.path.join(experiment_path, 'exp_config.txt'), 'w') as f:
     for key in sorted(argsdict):
         f.write(key+'    '+str(argsdict[key])+'\n')
 
@@ -436,7 +436,7 @@ train_losses = []
 val_ppls = []
 val_losses = []
 best_val_so_far = np.inf
-times = []
+epochs_end_time = []
 
 # In debug mode, only run one epoch
 if args.debug:
@@ -445,8 +445,9 @@ else:
     num_epochs = args.num_epochs
 
 # MAIN LOOP
+t0 = time.time()
 for epoch in range(num_epochs):
-    t0 = time.time()
+    t0_epoch = time.time()
     print('\nEPOCH '+str(epoch)+' ------------------')
     if args.optimizer == 'SGD_LR_SCHEDULE':
         lr_decay = lr_decay_base ** max(epoch - m_flat_lr, 0)
@@ -478,12 +479,12 @@ for epoch in range(num_epochs):
     val_ppls.append(val_ppl)
     train_losses.extend(train_loss)
     val_losses.extend(val_loss)
-    times.append(time.time() - t0)
+    epochs_end_time.append(time.time() - t0)
     log_str = 'epoch: ' + str(epoch) + '\t' \
               + 'train ppl: ' + str(train_ppl) + '\t' \
               + 'val ppl: ' + str(val_ppl) + '\t' \
               + 'best val: ' + str(best_val_so_far) + '\t' \
-              + 'time (s) spent in epoch: ' + str(times[-1])
+              + 'time (s) spent in epoch: ' + str(time.time() - t0_epoch)
     print(log_str)
     with open(os.path.join(args.save_dir, 'log.txt'), 'a') as f_:
         f_.write(log_str + '\n')
@@ -491,10 +492,13 @@ for epoch in range(num_epochs):
 # SAVE LEARNING CURVES
 lc_path = os.path.join(args.save_dir, 'learning_curves.npy')
 print('\nDONE\n\nSaving learning curves to '+lc_path)
-np.save(lc_path, {'train_ppls': train_ppls,
-                  'val_ppls': val_ppls,
-                  'train_losses': train_losses,
-                  'val_losses': val_losses})
+np.save(lc_path, {
+    'train_ppls': train_ppls,
+    'val_ppls': val_ppls,
+    'train_losses': train_losses,
+    'val_losses': val_losses,
+    'epochs_end_time': epochs_end_time
+})
 # NOTE ==============================================
 # To load these, run 
 # >>> x = np.load(lc_path)[()]
