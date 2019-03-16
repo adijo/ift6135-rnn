@@ -6,17 +6,33 @@ plt.style.use('seaborn-whitegrid')
 
 
 def main():
-    lc_path = "E:/Repos/ift6135-rnn/assignment2/experiments/RNN_ADAM_model=RNN_optimizer=ADAM_initial_lr=0.0001_batch_size=200_seq_len=35_hidden_size=1500_num_layers=2_dp_keep_prob=0.35_num_epochs=5_save_best_save_dir=experiments_0/learning_curves.npy"
+    problem_4_1()
+
+
+def problem_4_1():
+    lc_path = "absolute path to use"
+
     train_ppls, val_ppls, epochs_end_time = load_plot_values(lc_path)
+    epochs_end_time = [x/60.0 for x in epochs_end_time]
+    epochs = range(len(train_ppls))
 
+    # Learning curves over epochs
     fig, ax = plt.subplots()
-
-    ax.plot(x_values, y_values, 'b-', label='plot label')
-    ax.set_xlabel('x axis')
-    ax.set_ylabel('y axis')
-    ax.set_title("Plot title")
+    ax.plot(epochs, train_ppls, 'k', label='Training')
+    ax.plot(epochs, val_ppls, 'g', label='Validation')
+    # plt.xticks(np.arange(min(epochs), max(epochs) + 1, 1.0))
+    ax.set_xlabel('Epoch')
+    ax.set_ylabel('PPL')
     ax.legend(loc='upper right', shadow=True, fontsize='large')
+    plt.show()
 
+    # Learning curves over wall-clock-time
+    fig, ax = plt.subplots()
+    ax.plot(epochs_end_time, train_ppls, 'k', label='Training')
+    ax.plot(epochs_end_time, val_ppls, 'g', label='Validation')
+    ax.set_xlabel('Wall-clock-time (minutes)')
+    ax.set_ylabel('PPL')
+    ax.legend(loc='upper right', shadow=True, fontsize='large')
     plt.show()
 
 
