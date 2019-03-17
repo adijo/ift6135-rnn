@@ -443,10 +443,12 @@ class MultiHeadedAttention(nn.Module):
         #Appently I just did a typo. But the formula x * s is clearly not equivalent to this one.
         x_tilde = x * s - 1e9*(1-s)
         
-        exp_x_tilde = torch.exp(x_tilde)
-        sum_x_tilde = torch.sum(exp_x_tilde,dim=2)
-        sum_x_tilde = sum_x_tilde.unsqueeze(dim=2)
-        result = exp_x_tilde / sum_x_tilde
+        #According to the latest post in slack, we should use torch.softmax.
+        result = torch.nn.functional.softmax(x_tilde, dim=2)
+        #exp_x_tilde = torch.exp(x_tilde)
+        #sum_x_tilde = torch.sum(exp_x_tilde,dim=2)
+        #sum_x_tilde = sum_x_tilde.unsqueeze(dim=2)
+        #result = exp_x_tilde / sum_x_tilde
         return result
 
     def attention(self, Q, K, V, s):
