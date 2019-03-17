@@ -17,7 +17,6 @@ def main():
     ]
 
     for command in commands:
-        # Example
         for path in run_command(command):
             print(path, end="")
 
