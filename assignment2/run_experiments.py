@@ -32,7 +32,16 @@ def problems_4_1_and_4_2():
     leftover_commands = []
 
     # Place the commands in this array you want to run (they will be run one after another, not in parallel)
-    commands_to_run = []
+    commands_to_run = [
+          #"python ptb-lm.py --model=RNN --optimizer=SGD --initial_lr=0.0001 --batch_size=200 --seq_len=40 --hidden_size=1500 --num_layers=4 --dp_keep_prob=0.3",
+          #"python ptb-lm.py --model=RNN --optimizer=SGD_LR_SCHEDULE --initial_lr=20 --batch_size=200 --seq_len=35 --hidden_size=2000 --num_layers=3 --dp_keep_prob=0.4",
+          #"python ptb-lm.py --model=RNN --optimizer=ADAM --initial_lr=0.0001 --batch_size=200 --seq_len=35 --hidden_size=1000 --num_layers=4 --dp_keep_prob=0.5",
+          #"python ptb-lm.py --model=GRU --optimizer=SGD --initial_lr=0.0001 --batch_size=200 --seq_len=35 --hidden_size=1500 --num_layers=2 --dp_keep_prob=0.3",
+        #"python ptb-lm.py --model=GRU --optimizer=SGD_LR_SCHEDULE --initial_lr=10 --batch_size=200 --seq_len=35 --hidden_size=2000 --num_layers=2 --dp_keep_prob=0.35",
+        #"python ptb-lm.py --model=GRU --optimizer=SGD_LR_SCHEDULE --initial_lr=10 --batch_size=200 --seq_len=40 --hidden_size=1500 --num_layers=2 --dp_keep_prob=0.35",
+        "python ptb-lm.py --model=GRU --optimizer=SGD_LR_SCHEDULE --initial_lr=10 --batch_size=200 --seq_len=35 --hidden_size=1500 --num_layers=4 --dp_keep_prob=0.35",
+          #"python ptb-lm.py --model=GRU --optimizer=ADAM --initial_lr=0.0001 --batch_size=200 --seq_len=30 --hidden_size=1750 --num_layers=2 --dp_keep_prob=0.5"
+    ]
 
     for command in commands_to_run:
         for message in run_command(command):
@@ -45,8 +54,6 @@ def run_command(cmd):
         yield stdout_line
     popen.stdout.close()
     return_code = popen.wait()
-    if return_code:
-        raise subprocess.CalledProcessError(return_code, cmd)
 
 
 if __name__ == '__main__':
