@@ -48,31 +48,16 @@ def problem_4_1_draw_figure(file_path, figure_title, start_epoch):
     plt.show()
 
 
-def problem_4_2():
-    lc_path = "absolute path to use"
+def problem_4_2_figures():
+    results = [
+        "experiments_problem4_2/experiment_4_970gtx/learning_curves.npy",
+        "experiments_problem4_2/experiment_5_970gtx/learning_curves.npy",
+        # "experiments_problem4_2/experiment_6_1070ti/learning_curves.npy",
+        "experiments_problem4_2/experiment_7_1070ti/learning_curves.npy",
+        "experiments_problem4_2/experiment_8_1070ti/learning_curves.npy",
+        "experiments_problem4_2/experiment_9_1070ti/learning_curves.npy"
+    ]
 
-    train_ppls_1, val_ppls_1, epochs_end_time_1 = load_plot_values(lc_path)
-    epochs_end_time_1 = [x/60.0 for x in epochs_end_time_1]
-    epochs = range(len(train_ppls_1))
-
-    # Learning curves over epochs
-    fig, ax = plt.subplots()
-    ax.plot(epochs, train_ppls_1, 'k', label='Training')
-    ax.plot(epochs, val_ppls_1, 'g', label='Validation')
-    # plt.xticks(np.arange(min(epochs), max(epochs) + 1, 1.0))
-    ax.set_xlabel('Epoch')
-    ax.set_ylabel('PPL')
-    ax.legend(loc='upper right', shadow=True, fontsize='large')
-    plt.show()
-
-    # Learning curves over wall-clock-time
-    fig, ax = plt.subplots()
-    ax.plot(epochs_end_time_1, train_ppls_1, 'k', label='Training')
-    ax.plot(epochs_end_time_1, val_ppls_1, 'g', label='Validation')
-    ax.set_xlabel('Wall-clock-time (minutes)')
-    ax.set_ylabel('PPL')
-    ax.legend(loc='upper right', shadow=True, fontsize='large')
-    plt.show()
 
 def load_plot_values(
     path
