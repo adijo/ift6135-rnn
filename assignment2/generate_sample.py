@@ -73,8 +73,8 @@ gru = GRU(emb_size=argsdict["GRU_emb_size"], hidden_size=argsdict["GRU_hidden_si
                 dp_keep_prob=1)
 
 # Load the model weight
-rnn.load_state_dict(torch.load("rnn/best_params.pt"))
-gru.load_state_dict(torch.load("gru/best_params.pt"))
+rnn.load_state_dict(torch.load(args.RNN_path))
+gru.load_state_dict(torch.load(args.GRU_path))
 
 rnn.eval()
 gru.eval()
