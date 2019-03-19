@@ -202,6 +202,34 @@ class RNN(nn.Module):
                         shape: (generated_seq_len, batch_size)
         """
 
+        hiddendict = {}
+        sequence_list = []
+        sequence_list.append(input.unsqueeze(0))  # First word will be the seed
+
+        hiddendict[0] = hidden
+
+        # The first input is given so need -1
+        # for the seq to be of the good length.
+        for timestep in range(generated_seq_len - 1):
+            hiddendict[timestep + 1] = {}
+
+            embedded = self.embedding(input)
+            hiddendict[timestep + 1][0] = torch.tanh(self.FirstHidden_input(embedded) +
+                                                     self.FirstHidden_hidden(hiddendict[timestep][0]))
+
+            for i, layer in enumerate(self.hidden_layers):
+                x = hiddendict[timestep + 1][i]
+                hiddendict[timestep + 1][i + 1] = torch.tanh(layer[0](x) + layer[1](hiddendict[timestep][i + 1]))
+
+            probability = F.softmax(self.Wy(hiddendict[timestep + 1][self.num_layers - 1]), dim=1)
+            token = torch.multinomial(probability, 1)
+            token.transpose_(0, 1)
+
+            sequence_list.append(token)
+            input = token.squeeze()
+
+        samples = torch.cat(sequence_list, dim=0)
+
         return samples
 
 
@@ -216,7 +244,6 @@ class GRU(nn.Module):
     def __init__(self, emb_size, hidden_size, seq_len, batch_size, vocab_size, num_layers, dp_keep_prob):
         super(GRU, self).__init__()
 
-        # TODO ========================
         self.seq_len = seq_len
         self.num_layers = num_layers
         self.batch_size = batch_size
@@ -250,12 +277,7 @@ class GRU(nn.Module):
         self.apply(self.init_weights_uniform)
 
     def init_weights_uniform(self, m):
-        # TODO ========================
-        # Initialize all the weights uniformly in the range [-0.1, 0.1]
-        # and all the biases to 0 (in place)
-        # if this is done performance is quite bad
-        # Weight for emmbedding and last layer initialize all the weights uniformly in the range [-0.1, 0.1]
-        # Weight for the reccurent part  uniformly in the range [-sqrt(1/nb hidden_unit), sqrt(1/nb hidden_unit)]
+
         initrange = 0.1
         if type(m) == nn.Linear:
             torch.nn.init.uniform_(m.weight, -math.sqrt(1 / self.hidden_size), math.sqrt(1 / self.hidden_size))
@@ -273,9 +295,7 @@ class GRU(nn.Module):
         return self.inititial_hidden
 
     def forward(self, inputs, hidden):
-        # TODO ========================
 
-        logits_list = []
         hiddendict = {}
         logits_list = []
         hiddendict[0] = hidden
@@ -304,7 +324,36 @@ class GRU(nn.Module):
         return logits.view(inputs.size(0), inputs.size(1), self.vocab_size), hidden
 
     def generate(self, input, hidden, generated_seq_len):
-        # TODO ========================
+
+        hiddendict = {}
+        sequence_list = []
+        sequence_list.append(input.unsqueeze(0))  # First word will be the seed
+        hiddendict[0] = hidden
+
+        for timestep in range(generated_seq_len - 1):
+            hiddendict[timestep + 1] = {}
+
+            embedded = self.embedding(input)
+            reset = torch.sigmoid(self.First_Wr(embedded) + self.First_Ur(hiddendict[timestep][0]))
+            forget = torch.sigmoid(self.First_Wz(embedded) + self.First_Uz(hiddendict[timestep][0]))
+            hidden_mod = torch.tanh(self.First_Wh(embedded) + self.First_Uh(reset * hiddendict[timestep][0]))
+            hiddendict[timestep + 1][0] = (1 - forget) * hidden_mod + forget * hiddendict[timestep][0]
+
+            for i, layer in enumerate(self.hidden_layers):
+                x = hiddendict[timestep + 1][i]
+                reset = torch.sigmoid(layer[0](x) + layer[1](hiddendict[timestep][i + 1]))
+                forget = torch.sigmoid(layer[2](x) + layer[3](hiddendict[timestep][i + 1]))
+                hidden_mod = torch.tanh(layer[4](x) + layer[5](reset * hiddendict[timestep][i + 1]))
+                hiddendict[timestep + 1][i + 1] = forget * hidden_mod + (1 - forget) * hiddendict[timestep][i + 1]
+
+            probability = F.softmax(self.Wy(hiddendict[timestep + 1][self.num_layers - 1]), dim=1)
+            token = torch.multinomial(probability, 1)
+            token.transpose_(0, 1)
+
+            sequence_list.append(token)
+            input = token.squeeze()
+
+        samples = torch.cat(sequence_list, dim=0)
 
         return samples
 
@@ -384,59 +433,59 @@ class MultiHeadedAttention(nn.Module):
         self.d_k = n_units // n_heads
         # This requires the number of n_heads to evenly divide n_units.
         assert n_units % n_heads == 0
-        self.n_units = n_units 
+        self.n_units = n_units
         self.n_heads = n_heads
         self.dropout_rate = dropout
 
         self.dropout = nn.Dropout(p=dropout)
 
-        self.V = nn.Linear(n_units,n_units)
-        self.Q = nn.Linear(n_units,n_units)
-        self.K = nn.Linear(n_units,n_units)
-        
-        self.O = nn.Linear(n_units,n_units)
+        self.V = nn.Linear(n_units, n_units)
+        self.Q = nn.Linear(n_units, n_units)
+        self.K = nn.Linear(n_units, n_units)
+
+        self.O = nn.Linear(n_units, n_units)
 
         self.apply(self.init_weights)
-             
+
     def init_weights(self, m):
         # TODO ========================
-         # Initialize all weights and biases uniformly in the range [-k, k],
+        # Initialize all weights and biases uniformly in the range [-k, k],
         # where k is the square root of 1/n_units.
-        k = math.sqrt(1/self.n_units)
+        k = math.sqrt(1 / self.n_units)
         if type(m) == nn.Linear:
             torch.nn.init.uniform_(m.weight, -k, k)
             torch.nn.init.uniform_(m.bias, -k, k)
 
-        
     def forward(self, query, key, value, mask=None):
         # TODO: implement the masked multi-head attention.
         # query, key, and value all have size: (batch_size, seq_len, self.n_units, self.d_k)
         # mask has size: (batch_size, seq_len, seq_len)
         # As described in the .tex, apply input masking to the softt)
         # Also apply dropout to the attention values.
-        #Split the fully connected layer into 16 attention heads.
-        self.v = self.V(value).view(value.shape[0],-1,self.n_heads,self.d_k).transpose(1,2)
-        self.q = self.K(key).view(key.shape[0],-1,self.n_heads,self.d_k).transpose(1,2)
-        self.k = self.Q(query).view(query.shape[0],-1,self.n_heads,self.d_k).transpose(1,2)
-        mask=mask.unsqueeze(1)
+        # Split the fully connected layer into 16 attention heads.
+        self.v = self.V(value).view(value.shape[0], -1, self.n_heads, self.d_k).transpose(1, 2)
+        self.q = self.K(key).view(key.shape[0], -1, self.n_heads, self.d_k).transpose(1, 2)
+        self.k = self.Q(query).view(query.shape[0], -1, self.n_heads, self.d_k).transpose(1, 2)
+        mask = mask.unsqueeze(1)
         a = self.attention(self.q, self.k, self.v, mask)
-        a = a.transpose(1,2).contiguous().view(query.shape[0], -1, self.n_units)
-        self.o = self.O(a) 
-        return self.o# size: (batch_size, seq_len, self.n_units)
+        a = a.transpose(1, 2).contiguous().view(query.shape[0], -1, self.n_units)
+        self.o = self.O(a)
+        return self.o  # size: (batch_size, seq_len, self.n_units)
 
-    def stable_softmax(self, x, s): #X is the input vector, s is the dropout mask
-        s = s.float() #128 x 35 x 35
-        x_tilde = x * s - 1e9*(1-s)        
+    def stable_softmax(self, x, s):  # X is the input vector, s is the dropout mask
+        s = s.float()  # 128 x 35 x 35
+        x_tilde = x * s - 1e9 * (1 - s)
         result = torch.nn.functional.softmax(x_tilde, dim=-1)
         return result
 
     def attention(self, Q, K, V, s):
-        K_t = K.transpose(-2,-1)
-        qkt_on_dk = torch.matmul(Q, K_t)/math.sqrt(self.d_k)
-        qkt_on_dk_ss = self.stable_softmax(qkt_on_dk,s)
+        K_t = K.transpose(-2, -1)
+        qkt_on_dk = torch.matmul(Q, K_t) / math.sqrt(self.d_k)
+        qkt_on_dk_ss = self.stable_softmax(qkt_on_dk, s)
         qkt_on_dk_ss = self.dropout(qkt_on_dk_ss)
-        res = torch.matmul(qkt_on_dk_ss,V)
+        res = torch.matmul(qkt_on_dk_ss, V)
         return res
+
 
 # ----------------------------------------------------------------------------------
 # The encodings of elements of the input sequence
