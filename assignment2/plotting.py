@@ -6,16 +6,23 @@ plt.style.use('seaborn-whitegrid')
 
 
 def main():
-    draw_problem_4_2_figures()
-
-
-def draw_problem_4_1_figures():
     learning_curves = [
         "experiments_problem4_1/experiment_1_970gtx/learning_curves.npy",
         "experiments_problem4_1/experiment_2_970gtx/learning_curves.npy",
-        "experiments_problem4_1/experiment_3_1070ti/learning_curves.npy"
+        "experiments_problem4_1/experiment_3_1070ti/learning_curves.npy",
+        "experiments_problem4_2/experiment_4_970gtx/learning_curves.npy",
+        "experiments_problem4_2/experiment_5_970gtx/learning_curves.npy",
+        "experiments_problem4_2/experiment_6_1070ti/learning_curves.npy",
+        "experiments_problem4_2/experiment_7_1070ti/learning_curves.npy",
+        "experiments_problem4_2/experiment_8_1070ti/learning_curves.npy",
+        "experiments_problem4_2/experiment_9_1070ti/learning_curves.npy"
     ]
 
+    draw_problem_4_1_figures(learning_curves)
+    draw_problem_4_2_figures(learning_curves)
+
+
+def draw_problem_4_1_figures(learning_curves):
     figures_data = [
         {
             "title": "Experiment {}".format(i+1),
@@ -23,7 +30,7 @@ def draw_problem_4_1_figures():
                 {
                     "learning_curve": learning_curves[i],
                     "description": "",
-                    "stroke": ["k", "g"],
+                    "strokes": ["k", "g"],
                     "start_epoch": 0
                 }
             ]
@@ -36,30 +43,22 @@ def draw_problem_4_1_figures():
         draw_epoch_and_wall_clock_time_figures(figure_data)
 
 
-def draw_problem_4_2_figures():
-    learning_curves = [
-        "experiments_problem4_2/experiment_4_970gtx/learning_curves.npy",
-        "experiments_problem4_2/experiment_5_970gtx/learning_curves.npy",
-        "experiments_problem4_2/experiment_6_1070ti/learning_curves.npy",
-        "experiments_problem4_2/experiment_7_1070ti/learning_curves.npy",
-        "experiments_problem4_2/experiment_8_1070ti/learning_curves.npy",
-        "experiments_problem4_2/experiment_9_1070ti/learning_curves.npy"
-    ]
+def draw_problem_4_2_figures(learning_curves):
 
     figures_data = [
         {
             "title": "Experiments 4 and 5: RNN architecture",
             "subplots": [
                 {
-                    "learning_curve": learning_curves[0],
+                    "learning_curve": learning_curves[3],
                     "description": "#4",
-                    "stroke": ["k", "g"],
+                    "strokes": ["k", "g"],
                     "start_epoch": 0
                 },
                 {
-                    "learning_curve": learning_curves[1],
+                    "learning_curve": learning_curves[4],
                     "description": "#5",
-                    "stroke": ["k*-", "g*-"],
+                    "strokes": ["k*-", "g*-"],
                     "start_epoch": 0
                 }
             ]
@@ -68,15 +67,15 @@ def draw_problem_4_2_figures():
             "title": "Experiments 6 and 7: GRU architecture",
             "subplots": [
                 {
-                    "learning_curve": learning_curves[2],
+                    "learning_curve": learning_curves[5],
                     "description": "#6",
-                    "stroke": ["k", "g"],
+                    "strokes": ["k", "g"],
                     "start_epoch": 0
                 },
                 {
-                    "learning_curve": learning_curves[3],
+                    "learning_curve": learning_curves[6],
                     "description": "#7",
-                    "stroke": ["k*-", "g*-"],
+                    "strokes": ["k*-", "g*-"],
                     "start_epoch": 0
                 }
             ]
@@ -85,16 +84,67 @@ def draw_problem_4_2_figures():
             "title": "Experiments 8 and 9: Transformer architecture",
             "subplots": [
                 {
-                    "learning_curve": learning_curves[4],
+                    "learning_curve": learning_curves[7],
                     "description": "#8",
-                    "stroke": ["k", "g"],
+                    "strokes": ["k", "g"],
                     "start_epoch": 2
                 },
                 {
-                    "learning_curve": learning_curves[5],
+                    "learning_curve": learning_curves[8],
                     "description": "#9",
-                    "stroke": ["k*-", "g*-"],
+                    "strokes": ["k*-", "g*-"],
                     "start_epoch": 2
+                }
+            ]
+        },
+        {
+            "title": "Experiments 4, 6 and 8: SGD Optimizer",
+            "subplots": [
+                {
+                    "learning_curve": learning_curves[3],
+                    "description": "#4 970gtx",
+                    "strokes": ["k", "g"],
+                    "start_epoch": 0
+                },
+                {
+                    "learning_curve": learning_curves[5],
+                    "description": "#6 1070ti",
+                    "strokes": ["b", "c"],
+                    "start_epoch": 0
+                },
+                {
+                    "learning_curve": learning_curves[7],
+                    "description": "#8 1070ti",
+                    "strokes": ["k*-", "g*-"],
+                    "start_epoch": 1
+                }
+            ]
+        },
+        {
+            "title": "Experiment 5: SGD_LR_SCHEDULE optimizer",
+            "subplots": [
+                {
+                    "learning_curve": learning_curves[4],
+                    "description": "#5",
+                    "strokes": ["k", "g"],
+                    "start_epoch": 0
+                },
+            ]
+        },
+        {
+            "title": "Experiments 7 and 9: ADAM Optimizer",
+            "subplots": [
+                {
+                    "learning_curve": learning_curves[6],
+                    "description": "#7",
+                    "strokes": ["k", "g"],
+                    "start_epoch": 0
+                },
+                {
+                    "learning_curve": learning_curves[8],
+                    "description": "#9",
+                    "strokes": ["k*-", "g*-"],
+                    "start_epoch": 0
                 }
             ]
         }
@@ -110,8 +160,8 @@ def draw_epoch_and_wall_clock_time_figures(figure_data):
     for subplot in figure_data["subplots"]:
         train_ppls, val_ppls, epochs, epochs_end_time = load_data(subplot["learning_curve"], subplot["start_epoch"])
 
-        ax.plot(epochs, train_ppls, subplot["stroke"][0], label=" ".join([subplot["description"], "Training"]))
-        ax.plot(epochs, val_ppls, subplot["stroke"][1], label=" ".join([subplot["description"], "Validation"]))
+        ax.plot(epochs, train_ppls, subplot["strokes"][0], label=" ".join([subplot["description"], "Training"]))
+        ax.plot(epochs, val_ppls, subplot["strokes"][1], label=" ".join([subplot["description"], "Validation"]))
     init_axis_and_legend(ax, 'Epoch', 'PPL')
     plt.show()
 
@@ -120,8 +170,8 @@ def draw_epoch_and_wall_clock_time_figures(figure_data):
     for subplot in figure_data["subplots"]:
         train_ppls, val_ppls, epochs, epochs_end_time = load_data(subplot["learning_curve"], subplot["start_epoch"])
 
-        ax.plot(epochs_end_time, train_ppls, subplot["stroke"][0], label=" ".join([subplot["description"], "Training"]))
-        ax.plot(epochs_end_time, val_ppls, subplot["stroke"][1], label=" ".join([subplot["description"], "Validation"]))
+        ax.plot(epochs_end_time, train_ppls, subplot["strokes"][0], label=" ".join([subplot["description"], "Training"]))
+        ax.plot(epochs_end_time, val_ppls, subplot["strokes"][1], label=" ".join([subplot["description"], "Validation"]))
     init_axis_and_legend(ax, 'Wall-clock-time (minutes)', 'PPL')
     plt.show()
 
