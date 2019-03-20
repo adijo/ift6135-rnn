@@ -6,57 +6,146 @@ plt.style.use('seaborn-whitegrid')
 
 
 def main():
-    problem_4_1_figures()
+    draw_problem_4_2_figures()
 
 
-def problem_4_1_figures():
-    results = [
-        ["experiments_problem4_1/experiment_1_970gtx/learning_curves.npy", "Experiment 1", 0],
-        ["experiments_problem4_1/experiment_2_970gtx/learning_curves.npy", "Experiment 2", 0],
-        ["experiments_problem4_1/experiment_3_1070ti/learning_curves.npy", "Experiment 3", 2]
+def draw_problem_4_1_figures():
+    learning_curves = [
+        "experiments_problem4_1/experiment_1_970gtx/learning_curves.npy",
+        "experiments_problem4_1/experiment_2_970gtx/learning_curves.npy",
+        "experiments_problem4_1/experiment_3_1070ti/learning_curves.npy"
     ]
 
-    for result in results:
-        problem_4_1_draw_figure(file_path=result[0], figure_title=result[1], start_epoch=result[2])
+    figures_data = [
+        {
+            "title": "Experiment {}".format(i+1),
+            "subplots": [
+                {
+                    "learning_curve": learning_curves[i],
+                    "description": "",
+                    "stroke": ["k", "g"],
+                    "start_epoch": 0
+                }
+            ]
+        }
+        for i in range(3)
+    ]
+    figures_data[2]["subplots"][0]["start_epoch"] = 2
+
+    for figure_data in figures_data:
+        draw_epoch_and_wall_clock_time_figures(figure_data)
 
 
-def problem_4_1_draw_figure(file_path, figure_title, start_epoch):
+def draw_problem_4_2_figures():
+    learning_curves = [
+        "experiments_problem4_2/experiment_4_970gtx/learning_curves.npy",
+        "experiments_problem4_2/experiment_5_970gtx/learning_curves.npy",
+        "experiments_problem4_2/experiment_6_1070ti/learning_curves.npy",
+        "experiments_problem4_2/experiment_7_1070ti/learning_curves.npy",
+        "experiments_problem4_2/experiment_8_1070ti/learning_curves.npy",
+        "experiments_problem4_2/experiment_9_1070ti/learning_curves.npy"
+    ]
+
+    figures_data = [
+        {
+            "title": "Experiments 4 and 5: RNN architecture",
+            "subplots": [
+                {
+                    "learning_curve": learning_curves[0],
+                    "description": "#4",
+                    "stroke": ["k", "g"],
+                    "start_epoch": 0
+                },
+                {
+                    "learning_curve": learning_curves[1],
+                    "description": "#5",
+                    "stroke": ["k*-", "g*-"],
+                    "start_epoch": 0
+                }
+            ]
+        },
+        {
+            "title": "Experiments 6 and 7: GRU architecture",
+            "subplots": [
+                {
+                    "learning_curve": learning_curves[2],
+                    "description": "#6",
+                    "stroke": ["k", "g"],
+                    "start_epoch": 0
+                },
+                {
+                    "learning_curve": learning_curves[3],
+                    "description": "#7",
+                    "stroke": ["k*-", "g*-"],
+                    "start_epoch": 0
+                }
+            ]
+        },
+        {
+            "title": "Experiments 8 and 9: Transformer architecture",
+            "subplots": [
+                {
+                    "learning_curve": learning_curves[4],
+                    "description": "#8",
+                    "stroke": ["k", "g"],
+                    "start_epoch": 2
+                },
+                {
+                    "learning_curve": learning_curves[5],
+                    "description": "#9",
+                    "stroke": ["k*-", "g*-"],
+                    "start_epoch": 2
+                }
+            ]
+        }
+    ]
+
+    for figure_data in figures_data:
+        draw_epoch_and_wall_clock_time_figures(figure_data)
+
+
+def draw_epoch_and_wall_clock_time_figures(figure_data):
+    # Learning curves over epochs
+    ax = new_figure(figure_data["title"])
+    for subplot in figure_data["subplots"]:
+        train_ppls, val_ppls, epochs, epochs_end_time = load_data(subplot["learning_curve"], subplot["start_epoch"])
+
+        ax.plot(epochs, train_ppls, subplot["stroke"][0], label=" ".join([subplot["description"], "Training"]))
+        ax.plot(epochs, val_ppls, subplot["stroke"][1], label=" ".join([subplot["description"], "Validation"]))
+    init_axis_and_legend(ax, 'Epoch', 'PPL')
+    plt.show()
+
+    # Learning curves over wall-clock-time
+    ax = new_figure(figure_data["title"])
+    for subplot in figure_data["subplots"]:
+        train_ppls, val_ppls, epochs, epochs_end_time = load_data(subplot["learning_curve"], subplot["start_epoch"])
+
+        ax.plot(epochs_end_time, train_ppls, subplot["stroke"][0], label=" ".join([subplot["description"], "Training"]))
+        ax.plot(epochs_end_time, val_ppls, subplot["stroke"][1], label=" ".join([subplot["description"], "Validation"]))
+    init_axis_and_legend(ax, 'Wall-clock-time (minutes)', 'PPL')
+    plt.show()
+
+
+def load_data(file_path, start_epoch):
     train_ppls, val_ppls, epochs_end_time = load_plot_values(file_path)
     train_ppls = train_ppls[start_epoch:]
     val_ppls = val_ppls[start_epoch:]
     epochs_end_time = [x / 60.0 for x in epochs_end_time[start_epoch:]]
     epochs = range(start_epoch, start_epoch + len(train_ppls))
 
-    # Learning curves over epochs
+    return train_ppls, val_ppls, epochs, epochs_end_time
+
+
+def new_figure(figure_title):
     fig, ax = plt.subplots()
     ax.set_title(figure_title)
-    ax.plot(epochs, train_ppls, 'k', label='Training')
-    ax.plot(epochs, val_ppls, 'g', label='Validation')
-    ax.set_xlabel('Epoch')
-    ax.set_ylabel('PPL')
+    return ax
+
+
+def init_axis_and_legend(ax, x_axis_label, y_axis_label):
+    ax.set_xlabel(x_axis_label)
+    ax.set_ylabel(y_axis_label)
     ax.legend(loc='upper right', shadow=True, fontsize='large')
-    plt.show()
-
-    # Learning curves over wall-clock-time
-    fig, ax = plt.subplots()
-    ax.set_title(figure_title)
-    ax.plot(epochs_end_time, train_ppls, 'k', label='Training')
-    ax.plot(epochs_end_time, val_ppls, 'g', label='Validation')
-    ax.set_xlabel('Wall-clock-time (minutes)')
-    ax.set_ylabel('PPL')
-    ax.legend(loc='upper right', shadow=True, fontsize='large')
-    plt.show()
-
-
-def problem_4_2_figures():
-    results = [
-        "experiments_problem4_2/experiment_4_970gtx/learning_curves.npy",
-        "experiments_problem4_2/experiment_5_970gtx/learning_curves.npy",
-        # "experiments_problem4_2/experiment_6_1070ti/learning_curves.npy",
-        "experiments_problem4_2/experiment_7_1070ti/learning_curves.npy",
-        "experiments_problem4_2/experiment_8_1070ti/learning_curves.npy",
-        "experiments_problem4_2/experiment_9_1070ti/learning_curves.npy"
-    ]
 
 
 def load_plot_values(
