@@ -2,7 +2,7 @@ import subprocess
 
 
 def main():
-    problems_4_1_and_4_2()
+    problem_4_3()
 
 
 def problems_4_1_and_4_2():
@@ -15,19 +15,44 @@ def problems_4_1_and_4_2():
         "python ptb-lm.py --model=TRANSFORMER --optimizer=SGD_LR_SCHEDULE --initial_lr=20 --batch_size=128 --seq_len=35 --hidden_size=512 --num_layers=6 --dp_keep_prob=0.9 --save_best --save_dir=experiments_problem4_1"
     ]
 
-    # Place the commands in this array you want to run (they will be run one after another, not in parallel)
-    commands_to_run = [
-      "python ptb-lm.py --model=RNN --optimizer=SGD --initial_lr=0.0001 --batch_size=200 --seq_len=40 --hidden_size=2000 --num_layers=2 --dp_keep_prob=0.4",
-      "python ptb-lm.py --model=RNN --optimizer=SGD_LR_SCHEDULE --initial_lr=10 --batch_size=200 --seq_len=40 --hidden_size=2000 --num_layers=2 --dp_keep_prob=0.5",
-      "python ptb-lm.py --model=RNN --optimizer=ADAM --initial_lr=0.0001 --batch_size=200 --seq_len=35 --hidden_size=1000 --num_layers=4 --dp_keep_prob=0.5",
-      "python ptb-lm.py --model=GRU --optimizer=SGD_LR_SCHEDULE --initial_lr=10 --batch_size=200 --seq_len=35 --hidden_size=2000 --num_layers=2 --dp_keep_prob=0.35",
-      "python ptb-lm.py --model=GRU --optimizer=SGD --initial_lr=0.0001 --batch_size=200 --seq_len=35 --hidden_size=1500 --num_layers=2 --dp_keep_prob=0.3",
-      "python ptb-lm.py --model=GRU --optimizer=SGD_LR_SCHEDULE --initial_lr=10 --batch_size=200 --seq_len=40 --hidden_size=1500 --num_layers=2 --dp_keep_prob=0.35",
-      "python ptb-lm.py --model=GRU --optimizer=SGD_LR_SCHEDULE --initial_lr=10 --batch_size=200 --seq_len=35 --hidden_size=1500 --num_layers=4 --dp_keep_prob=0.35",
-      "python ptb-lm.py --model=GRU --optimizer=SGD_LR_SCHEDULE --initial_lr=10 --batch_size=200 --seq_len=35 --hidden_size=1500 --num_layers=4 --dp_keep_prob=0.35"
+
+def problem_4_3():
+    original_4_1_and_4_2_commands = [
+        "python ptb-lm.py --model=RNN --optimizer=SGD --initial_lr=0.0001 --batch_size=20 --seq_len=35 --hidden_size=1500 --num_layers=2 --dp_keep_prob=0.35",
+        "python ptb-lm.py --model=RNN --optimizer=SGD_LR_SCHEDULE --initial_lr=1 --batch_size=20 --seq_len=35 --hidden_size=512 --num_layers=2 --dp_keep_prob=0.35",
+        "python ptb-lm.py --model=RNN --optimizer=ADAM --initial_lr=0.0001 --batch_size=20 --seq_len=35 --hidden_size=1500 --num_layers=2 --dp_keep_prob=0.35",
+        "python ptb-lm.py --model=GRU --optimizer=SGD --initial_lr=10 --batch_size=20 --seq_len=35 --hidden_size=1500 --num_layers=2 --dp_keep_prob=0.35",
+        "python ptb-lm.py --model=GRU --optimizer=ADAM --initial_lr=0.0001 --batch_size=20 --seq_len=35 --hidden_size=1500 --num_layers=2 --dp_keep_prob=0.35",
+        "python ptb-lm.py --model=GRU --optimizer=SGD_LR_SCHEDULE --initial_lr=10 --batch_size=20 --seq_len=35 --hidden_size=1500 --num_layers=2 --dp_keep_prob=0.35",
+        "python ptb-lm.py --model=TRANSFORMER --optimizer=SGD --initial_lr=20 --batch_size=128 --seq_len=35 --hidden_size=512 --num_layers=6 --dp_keep_prob=.9",
+        "python ptb-lm.py --model=TRANSFORMER --optimizer=ADAM --initial_lr=0.001 --batch_size=128 --seq_len=35 --hidden_size=512 --num_layers=2 --dp_keep_prob=.9",
+        "python ptb-lm.py --model=TRANSFORMER --optimizer=SGD_LR_SCHEDULE --initial_lr=20 --batch_size=128 --seq_len=35 --hidden_size=512 --num_layers=6 --dp_keep_prob=0.9"
     ]
 
-    for command in commands_to_run:
+    attempted_improved_4_1_and_4_2_commands_to_use_for_4_3 = [
+        # dp_keep_prob = 0.5 instead of 0.35
+        #"python ptb-lm.py --model=RNN --optimizer=ADAM --initial_lr=0.0001 --batch_size=20 --seq_len=35 --hidden_size=1500 --num_layers=2 --dp_keep_prob=0.5",
+        # num_layers = 3 instead of 2
+        #"python ptb-lm.py --model=RNN --optimizer=ADAM --initial_lr=0.0001 --batch_size=20 --seq_len=35 --hidden_size=1500 --num_layers=3 --dp_keep_prob=0.35",
+        # hidden size 1400 instead of 1500
+        #"python ptb-lm.py --model=RNN --optimizer=ADAM --initial_lr=0.0001 --batch_size=20 --seq_len=35 --hidden_size=1400 --num_layers=3 --dp_keep_prob=0.35",
+        # learning rate 0.0004 instead of 0.0001
+        "python ptb-lm.py --model=RNN --optimizer=SGD --initial_lr=0.0004 --batch_size=20 --seq_len=35 --hidden_size=1500 --num_layers=2 --dp_keep_prob=0.35",
+        # learning rate 5 instead of 1
+        "python ptb-lm.py --model=RNN --optimizer=SGD_LR_SCHEDULE --initial_lr=5 --batch_size=20 --seq_len=35 --hidden_size=512 --num_layers=2 --dp_keep_prob=0.35",
+        # learning rate 10 instead of 1
+        #"python ptb-lm.py --model=RNN --optimizer=SGD_LR_SCHEDULE --initial_lr=10 --batch_size=20 --seq_len=35 --hidden_size=512 --num_layers=2 --dp_keep_prob=0.35",
+        # learning rate 15 instead of 10
+        #"python ptb-lm.py --model=GRU --optimizer=SGD_LR_SCHEDULE --initial_lr=15 --batch_size=20 --seq_len=35 --hidden_size=1500 --num_layers=2 --dp_keep_prob=0.35",
+        # dp_keep_prob 0.5 instead of 0.9
+        "python ptb-lm.py --model=TRANSFORMER --optimizer=SGD_LR_SCHEDULE --initial_lr=20 --batch_size=128 --seq_len=35 --hidden_size=512 --num_layers=6 --dp_keep_prob=0.5",
+        # dp_keep_prob 0.25 instead of 0.35
+        "python ptb-lm.py --model=GRU --optimizer=SGD --initial_lr=10 --batch_size=20 --seq_len=35 --hidden_size=1500 --num_layers=2 --dp_keep_prob=0.25",
+        # hidden_size 1400 instead of 1500
+        "python ptb-lm.py --model=GRU --optimizer=ADAM --initial_lr=0.0001 --batch_size=20 --seq_len=35 --hidden_size=1400 --num_layers=2 --dp_keep_prob=0.35"
+    ]
+
+    for command in attempted_improved_4_1_and_4_2_commands_to_use_for_4_3:
         for message in run_command(command):
             print(message, end="")
 
@@ -37,7 +62,7 @@ def run_command(cmd):
     for stdout_line in iter(popen.stdout.readline, ""):
         yield stdout_line
     popen.stdout.close()
-    return_code = popen.wait()
+    popen.wait()
 
 
 if __name__ == '__main__':
