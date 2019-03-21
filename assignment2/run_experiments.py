@@ -30,12 +30,6 @@ def problem_4_3():
     ]
 
     attempted_improved_4_1_and_4_2_commands_to_use_for_4_3 = [
-        # dp_keep_prob = 0.5 instead of 0.35
-        #"python ptb-lm.py --model=RNN --optimizer=ADAM --initial_lr=0.0001 --batch_size=20 --seq_len=35 --hidden_size=1500 --num_layers=2 --dp_keep_prob=0.5",
-        # num_layers = 3 instead of 2
-        #"python ptb-lm.py --model=RNN --optimizer=ADAM --initial_lr=0.0001 --batch_size=20 --seq_len=35 --hidden_size=1500 --num_layers=3 --dp_keep_prob=0.35",
-        # hidden size 1400 instead of 1500
-        #"python ptb-lm.py --model=RNN --optimizer=ADAM --initial_lr=0.0001 --batch_size=20 --seq_len=35 --hidden_size=1400 --num_layers=3 --dp_keep_prob=0.35",
         # learning rate 0.0004 instead of 0.0001
         "python ptb-lm.py --model=RNN --optimizer=SGD --initial_lr=0.0004 --batch_size=20 --seq_len=35 --hidden_size=1500 --num_layers=2 --dp_keep_prob=0.35",
         # learning rate 5 instead of 1
