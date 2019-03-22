@@ -34,12 +34,12 @@ def problems_4_1_and_4_2():
 
 def problem_4_3():
     experiments = [
-        # experiment_10_970gtx_1: learning rate 0.0004 instead of 0.0001
-        # "python ptb-lm.py --model=RNN --optimizer=SGD --initial_lr=0.0004 --batch_size=20 --seq_len=35 --hidden_size=1500 --num_layers=2 --dp_keep_prob=0.35",
-        # TODO: experiment 11: learning rate 5 instead of 1
-        "python ptb-lm.py --model=RNN --optimizer=SGD_LR_SCHEDULE --initial_lr=5 --batch_size=20 --seq_len=35 --hidden_size=512 --num_layers=2 --dp_keep_prob=0.35",
-        # TODO: experiment 11: learning rate 10 instead of 1
-        # "python ptb-lm.py --model=RNN --optimizer=SGD_LR_SCHEDULE --initial_lr=10 --batch_size=20 --seq_len=35 --hidden_size=512 --num_layers=2 --dp_keep_prob=0.35",
+        # experiment_10_970gtx_1: learning rate 0.0004 instead of 0.0001 (results show we can push the learning rate
+        # higher, like 0.001 instead of 0.0004)
+        #"python ptb-lm.py --model=RNN --optimizer=SGD --initial_lr=0.0004 --batch_size=20 --seq_len=35 --hidden_size=1500 --num_layers=2 --dp_keep_prob=0.35",
+        # experiment_11_gtx970_1: learning rate 5 instead of 1 (results show we can push the learning rate higher,
+        # like 20 instead of 5
+        #"python ptb-lm.py --model=RNN --optimizer=SGD_LR_SCHEDULE --initial_lr=5 --batch_size=20 --seq_len=35 --hidden_size=512 --num_layers=2 --dp_keep_prob=0.35",
         # experiment_12_970gtx_1: dp_keep_prob = 0.5 instead of 0.35
         #"python ptb-lm.py --model=RNN --optimizer=ADAM --initial_lr=0.0001 --batch_size=20 --seq_len=35 --hidden_size=1500 --num_layers=2 --dp_keep_prob=0.5",
         # TODO: experiment 13: dp_keep_prob 0.25 instead of 0.35
