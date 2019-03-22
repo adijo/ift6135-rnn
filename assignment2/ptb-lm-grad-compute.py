@@ -107,7 +107,7 @@ parser = argparse.ArgumentParser(description='PyTorch Penn Treebank Language Mod
 # Arguments you may need to set to run different experiments in 4.1 & 4.2.
 parser.add_argument('--data', type=str, default='data',
                     help='location of the data corpus')
-parser.add_argument('--model', type=str, default='RNN',
+parser.add_argument('--model', type=str, default='GRU',
                     help='type of recurrent net (RNN, GRU, TRANSFORMER)')
 parser.add_argument('--optimizer', type=str, default='SGD_LR_SCHEDULE',
                     help='optimization algo to use; SGD, SGD_LR_SCHEDULE, ADAM')
@@ -408,9 +408,11 @@ def run_epoch(model, data, is_train=False, lr=1.0):
         last_seq_logits = outputs[-1]
         last_seq_targets = targets[-1]
         grad_loss = loss_fn(last_seq_logits, last_seq_targets)
-        grad_loss.backward()
-        print(model.calculate_grad_norms())
-        break
+
+        if step == 50:
+            grad_loss.backward()
+            print(model.calculate_grad_norms())
+            break
          
 
 ###############################################################################

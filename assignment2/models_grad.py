@@ -12,21 +12,21 @@ from torch.autograd import Variable
 # Fill in code for every method which has a TODO
 #
 # Your implementation should use the contract (inputs
-# and outputs) given for each model, because that is 
-# what the main script expects. If you modify the contract, 
-# you must justify that choice, note it in your report, and notify the TAs 
+# and outputs) given for each model, because that is
+# what the main script expects. If you modify the contract,
+# you must justify that choice, note it in your report, and notify the TAs
 # so that we run the correct code.
 #
 # You may modify the internals of the RNN and GRU classes
 # as much as you like, except you must keep the methods
 # in each (init_weights_uniform, init_hidden, and forward)
-# Using nn.Module and "forward" tells torch which 
+# Using nn.Module and "forward" tells torch which
 # parameters are involved in the forward pass, so that it
 # can correctly (automatically) set up the backward pass.
 #
 # You should not modify the interals of the Transformer
 # except where indicated to implement the multi-head
-# attention. 
+# attention.
 
 
 def clones(module, N):
@@ -165,7 +165,7 @@ class RNN(nn.Module):
             embedded = self.drop(self.embedding(inputs[timestep]))
             hiddendict[timestep + 1][0] = torch.tanh(self.FirstHidden_input(embedded) +
                                                      self.FirstHidden_hidden(hiddendict[timestep][0]))
-
+            hiddendict[timestep + 1][0].retain_grad()
             for i, layer in enumerate(self.hidden_layers):
                 x = self.drop(hiddendict[timestep + 1][i])
                 hiddendict[timestep + 1][i + 1] = torch.tanh(layer[0](x) + layer[1](hiddendict[timestep][i + 1]))
@@ -177,17 +177,20 @@ class RNN(nn.Module):
         self.hidden_dict = hiddendict
         return logits.view(inputs.size(0), inputs.size(1), self.vocab_size), hidden
 
-     
+
     def calculate_grad_norms(self):
         # calculate norms from sequence length 1 for now.
         norm_values = []
         for i in range(1, len(self.hidden_dict)):
-            stacked_layers = torch.cat(list(self.hidden_dict[i].values()))
-            norm_values.append(stacked_layers.norm(2).item())
+            stacked_layers = torch.cat(list(map(lambda x: x.grad, self.hidden_dict[i].values())), dim=1)
+            assert stacked_layers.shape == (self.batch_size, self.num_layers * self.hidden_size)
+            norm_of_rows = torch.norm(stacked_layers, p=2, dim=1)
+            assert norm_of_rows.shape == (self.batch_size,)
+            norm_values.append(torch.mean(norm_of_rows).item())
         max_norm = max(norm_values)
         normalized = list(map(lambda x: x/max_norm, norm_values))
         return normalized
-   
+
 
     def generate(self, input, hidden, generated_seq_len):
         # TODO ========================
@@ -302,7 +305,7 @@ class GRU(nn.Module):
             forget = torch.sigmoid(self.First_Wz(embedded) + self.First_Uz(hiddendict[timestep][0]))
             hidden_mod = torch.tanh(self.First_Wh(embedded) + self.First_Uh(reset * hiddendict[timestep][0]))
             hiddendict[timestep + 1][0] = (1 - forget) * hidden_mod + forget * hiddendict[timestep][0]
-
+            hiddendict[timestep + 1][0].retain_grad()
             for i, layer in enumerate(self.hidden_layers):
                 x = self.drop(hiddendict[timestep + 1][i])  # apply Dropout
                 reset = torch.sigmoid(layer[0](x) + layer[1](hiddendict[timestep][i + 1]))
@@ -316,13 +319,16 @@ class GRU(nn.Module):
         hidden = torch.cat([hiddendict[self.seq_len][h].unsqueeze(0) for h in range(self.num_layers)], dim=0)
         self.hidden_dict = hiddendict
         return logits.view(inputs.size(0), inputs.size(1), self.vocab_size), hidden
-    
+
     def calculate_grad_norms(self):
         # calculate norms from sequence length 1 for now.
         norm_values = []
         for i in range(1, len(self.hidden_dict)):
-            stacked_layers = torch.cat(list(self.hidden_dict[i].values()))
-            norm_values.append(stacked_layers.norm(2).item())
+            stacked_layers = torch.cat(list(map(lambda x: x.grad, self.hidden_dict[i].values())), dim=1)
+            assert stacked_layers.shape == (self.batch_size, self.num_layers * self.hidden_size)
+            norm_of_rows = torch.norm(stacked_layers, p=2, dim=1)
+            assert norm_of_rows.shape == (self.batch_size,)
+            norm_values.append(torch.mean(norm_of_rows).item())
         max_norm = max(norm_values)
         normalized = list(map(lambda x: x/max_norm, norm_values))
         return normalized
@@ -408,7 +414,7 @@ class MultiHeadedAttention(nn.Module):
         self.d_k = n_units // n_heads
         # This requires the number of n_heads to evenly divide n_units.
         assert n_units % n_heads == 0
-        self.n_units = n_units 
+        self.n_units = n_units
         self.n_heads = n_heads
         self.dropout_rate = dropout
 
@@ -417,7 +423,7 @@ class MultiHeadedAttention(nn.Module):
 		# TODO: create/initialize any necessary parameters or layers
         # Initialize all weights and biases uniformly in the range [-k, k],
         # where k is the square root of 1/n_units.
-		
+
         self.V = nn.ModuleList([nn.Linear(n_units,self.d_k) for i in range(n_heads)])
         self.Q = nn.ModuleList([nn.Linear(n_units,self.d_k) for i in range(n_heads)])
         self.K = nn.ModuleList([nn.Linear(n_units,self.d_k) for i in range(n_heads)])
@@ -425,7 +431,7 @@ class MultiHeadedAttention(nn.Module):
         self.O = nn.Linear(n_units,n_units)
 
         self.apply(self.init_weights)
-             
+
     def init_weights(self, m):
         # TODO ========================
          # Initialize all weights and biases uniformly in the range [-k, k],
@@ -434,7 +440,7 @@ class MultiHeadedAttention(nn.Module):
             torch.nn.init.uniform_(m.weight, -math.sqrt(1/m.out_features), math.sqrt(1/m.out_features))
             torch.nn.init.uniform_(m.bias, -math.sqrt(1/m.out_features), math.sqrt(1/m.out_features))
 
-        
+
     def forward(self, query, key, value, mask=None):
         # TODO: implement the masked multi-head attention.
         # query, key, and value all have size: (batch_size, seq_len, self.n_units, self.d_k)
@@ -457,16 +463,16 @@ class MultiHeadedAttention(nn.Module):
     def stable_softmax(self, x, s): #X is the input vector, s is the dropout mask
         s = s.float() #128 x 35 x 35
 
-        #This implentation had crazy validation / train ppl. epoch: 21    train ppl: 1.1572353641563802    val ppl: 1.4495772582466449. 
+        #This implentation had crazy validation / train ppl. epoch: 21    train ppl: 1.1572353641563802    val ppl: 1.4495772582466449.
         #It acts as if there was not mask at all, and the predictions are made using all the 35 words instead of only the previous words.
         #x_tilde = x * s - 1e-9*(1-s)
-        
+
         #Implementation of the mask, as specified in the paper:
         #x_tilde = x.masked_fill(s==0, -float("inf")) #Paper is clear on the fact the the masked value should be -inf before applying the softmax https://arxiv.org/pdf/1706.03762.pdf
-        
+
         #Appently I just did a typo. But the formula x * s is clearly not equivalent to this one.
         x_tilde = x * s - 1e9*(1-s)
-        
+
         #According to the latest post in slack, we should use torch.softmax.
         result = torch.nn.functional.softmax(x_tilde, dim=2)
         #exp_x_tilde = torch.exp(x_tilde)
