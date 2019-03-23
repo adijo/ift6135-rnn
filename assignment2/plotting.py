@@ -15,11 +15,21 @@ def main():
         "experiments_problem4_2/experiment_6_1070ti/learning_curves.npy",
         "experiments_problem4_2/experiment_7_1070ti/learning_curves.npy",
         "experiments_problem4_2/experiment_8_1070ti/learning_curves.npy",
-        "experiments_problem4_2/experiment_9_1070ti/learning_curves.npy"
+        "experiments_problem4_2/experiment_9_1070ti/learning_curves.npy",
+        "experiments_problem4_3/experiment_10_970gtx_1/learning_curves.npy",
+        "experiments_problem4_3/experiment_11_970gtx_1/learning_curves.npy",
+        "experiments_problem4_3/experiment_12_970gtx_1/learning_curves.npy",
+        "experiments_problem4_3/experiment_13_970gtx_1/learning_curves.npy",
+        "experiments_problem4_3/experiment_14_970gtx_1/learning_curves.npy",
+        "experiments_problem4_3/experiment_15_970gtx_1/learning_curves.npy",
+        "experiments_problem4_3/experiment_16_1070ti_1/learning_curves.npy",
+        "experiments_problem4_3/experiment_17_1070ti_1/learning_curves.npy",
+        "experiments_problem4_3/experiment_18_1070ti_1/learning_curves.npy"
     ]
 
     draw_problem_4_1_figures(learning_curves)
     draw_problem_4_2_figures(learning_curves)
+    draw_problem_4_3_figures(learning_curves)
 
 
 def draw_problem_4_1_figures(learning_curves):
@@ -143,6 +153,153 @@ def draw_problem_4_2_figures(learning_curves):
                 {
                     "learning_curve": learning_curves[8],
                     "description": "#9",
+                    "strokes": ["k*-", "g*-"],
+                    "start_epoch": 0
+                }
+            ]
+        }
+    ]
+
+    for figure_data in figures_data:
+        draw_epoch_and_wall_clock_time_figures(figure_data)
+
+
+def draw_problem_4_3_figures(learning_curves):
+
+    figures_data = [
+        {
+            "title": "Experiments 10, 11 and 12: RNN architecture",
+            "subplots": [
+                {
+                    "learning_curve": learning_curves[9],
+                    "description": "#10",
+                    "strokes": ["k", "g"],
+                    "start_epoch": 0
+                },
+                {
+                    "learning_curve": learning_curves[10],
+                    "description": "#11",
+                    "strokes": ["b", "c"],
+                    "start_epoch": 0
+                },
+                {
+                    "learning_curve": learning_curves[11],
+                    "description": "#12",
+                    "strokes": ["k*-", "g*-"],
+                    "start_epoch": 0
+                }
+            ]
+        },
+        {
+            "title": "Experiments 13, 14 and 15: GRU architecture",
+            "subplots": [
+                {
+                    "learning_curve": learning_curves[12],
+                    "description": "#13",
+                    "strokes": ["k", "g"],
+                    "start_epoch": 0
+                },
+                {
+                    "learning_curve": learning_curves[13],
+                    "description": "#14",
+                    "strokes": ["b", "c"],
+                    "start_epoch": 0
+                },
+                {
+                    "learning_curve": learning_curves[14],
+                    "description": "#15",
+                    "strokes": ["k*-", "g*-"],
+                    "start_epoch": 0
+                }
+            ]
+        },
+        {
+            "title": "Experiments 16, 17 and 18: Transformer architecture",
+            "subplots": [
+                {
+                    "learning_curve": learning_curves[15],
+                    "description": "#16",
+                    "strokes": ["k", "g"],
+                    "start_epoch": 2
+                },
+                {
+                    "learning_curve": learning_curves[16],
+                    "description": "#17",
+                    "strokes": ["b", "c"],
+                    "start_epoch": 2
+                },
+                {
+                    "learning_curve": learning_curves[17],
+                    "description": "#18",
+                    "strokes": ["k*-", "g*-"],
+                    "start_epoch": 0
+                }
+            ]
+        },
+        {
+            "title": "Experiments 10, 13 and 16: SGD Optimizer",
+            "subplots": [
+                {
+                    "learning_curve": learning_curves[9],
+                    "description": "#10 970 GTX",
+                    "strokes": ["k", "g"],
+                    "start_epoch": 0
+                },
+                {
+                    "learning_curve": learning_curves[12],
+                    "description": "#13 970 GTX",
+                    "strokes": ["b", "c"],
+                    "start_epoch": 0
+                },
+                {
+                    "learning_curve": learning_curves[15],
+                    "description": "#16 1070 Ti",
+                    "strokes": ["k*-", "g*-"],
+                    "start_epoch": 2
+                }
+            ]
+        },
+        {
+            "title": "Experiment 11, 14 and 17: SGD_LR_SCHEDULE optimizer",
+            "subplots": [
+                {
+                    "learning_curve": learning_curves[10],
+                    "description": "#11 970 GTX",
+                    "strokes": ["k", "g"],
+                    "start_epoch": 0
+                },
+                {
+                    "learning_curve": learning_curves[13],
+                    "description": "#14 970 GTX",
+                    "strokes": ["b", "c"],
+                    "start_epoch": 0
+                },
+                {
+                    "learning_curve": learning_curves[16],
+                    "description": "#17 1070 Ti",
+                    "strokes": ["k*-", "g*-"],
+                    "start_epoch": 3
+                }
+            ]
+        },
+        {
+            "title": "Experiments 12, 15 and 18: ADAM Optimizer",
+            "subplots": [
+                {
+                    "learning_curve": learning_curves[11],
+                    "description": "#12 970 GTX",
+                    "strokes": ["k", "g"],
+                    "start_epoch": 0
+                },
+                {
+                    "learning_curve": learning_curves[14],
+                    "description": "#15 970 GTX",
+                    "strokes": ["b", "c"],
+                    "start_epoch": 0
+                },
+                {
+                    "learning_curve": learning_curves[17],
+                    "description": "#18 1070 Ti",
                     "strokes": ["k*-", "g*-"],
                     "start_epoch": 0
                 }
