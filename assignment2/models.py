@@ -80,9 +80,9 @@ class RNN(nn.Module):
         self.embedding = nn.Embedding(vocab_size, emb_size)
 
         self.FirstHidden_input = nn.Linear(emb_size, hidden_size)
-        self.FirstHidden_hidden = nn.Linear(hidden_size, hidden_size)
+        self.FirstHidden_hidden = nn.Linear(hidden_size, hidden_size, bias=False)
 
-        sublayer = nn.ModuleList([nn.Linear(hidden_size, hidden_size), nn.Linear(hidden_size, hidden_size)])
+        sublayer = nn.ModuleList([nn.Linear(hidden_size, hidden_size, bias=False), nn.Linear(hidden_size, hidden_size)])
         self.hidden_layers = clones(sublayer, self.num_layers - 1)
 
         self.Wy = nn.Linear(hidden_size, vocab_size)
@@ -255,20 +255,20 @@ class GRU(nn.Module):
         self.embedding = nn.Embedding(vocab_size, emb_size)
 
         self.First_Wr = nn.Linear(emb_size, hidden_size)
-        self.First_Ur = nn.Linear(hidden_size, hidden_size)
+        self.First_Ur = nn.Linear(hidden_size, hidden_size, bias=False)
 
         self.First_Wz = nn.Linear(emb_size, hidden_size)
-        self.First_Uz = nn.Linear(hidden_size, hidden_size)
+        self.First_Uz = nn.Linear(hidden_size, hidden_size, bias=False)
 
         self.First_Wh = nn.Linear(emb_size, hidden_size)
-        self.First_Uh = nn.Linear(hidden_size, hidden_size)
+        self.First_Uh = nn.Linear(hidden_size, hidden_size, bias=False)
 
         sublayer = nn.ModuleList([nn.Linear(hidden_size, hidden_size),
+                                  nn.Linear(hidden_size, hidden_size, bias=False),
                                   nn.Linear(hidden_size, hidden_size),
+                                  nn.Linear(hidden_size, hidden_size, bias=False),
                                   nn.Linear(hidden_size, hidden_size),
-                                  nn.Linear(hidden_size, hidden_size),
-                                  nn.Linear(hidden_size, hidden_size),
-                                  nn.Linear(hidden_size, hidden_size)])
+                                  nn.Linear(hidden_size, hidden_size, bias=False)])
 
         self.hidden_layers = clones(sublayer, self.num_layers - 1)
 
