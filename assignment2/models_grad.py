@@ -177,7 +177,6 @@ class RNN(nn.Module):
         self.hidden_dict = hiddendict
         return logits.view(inputs.size(0), inputs.size(1), self.vocab_size), hidden
 
-
     def calculate_grad_norms(self):
         # calculate norms from sequence length 1 for now.
         norm_values = []
@@ -420,26 +419,22 @@ class MultiHeadedAttention(nn.Module):
 
         self.dropout = nn.Dropout(p=dropout)
 
-		# TODO: create/initialize any necessary parameters or layers
-        # Initialize all weights and biases uniformly in the range [-k, k],
-        # where k is the square root of 1/n_units.
+        self.V = nn.Linear(n_units, n_units)
+        self.Q = nn.Linear(n_units, n_units)
+        self.K = nn.Linear(n_units, n_units)
 
-        self.V = nn.ModuleList([nn.Linear(n_units,self.d_k) for i in range(n_heads)])
-        self.Q = nn.ModuleList([nn.Linear(n_units,self.d_k) for i in range(n_heads)])
-        self.K = nn.ModuleList([nn.Linear(n_units,self.d_k) for i in range(n_heads)])
-
-        self.O = nn.Linear(n_units,n_units)
+        self.O = nn.Linear(n_units, n_units)
 
         self.apply(self.init_weights)
 
     def init_weights(self, m):
         # TODO ========================
-         # Initialize all weights and biases uniformly in the range [-k, k],
+        # Initialize all weights and biases uniformly in the range [-k, k],
         # where k is the square root of 1/n_units.
+        k = math.sqrt(1 / self.n_units)
         if type(m) == nn.Linear:
-            torch.nn.init.uniform_(m.weight, -math.sqrt(1/m.out_features), math.sqrt(1/m.out_features))
-            torch.nn.init.uniform_(m.bias, -math.sqrt(1/m.out_features), math.sqrt(1/m.out_features))
-
+            torch.nn.init.uniform_(m.weight, -k, k)
+            torch.nn.init.uniform_(m.bias, -k, k)
 
     def forward(self, query, key, value, mask=None):
         # TODO: implement the masked multi-head attention.
@@ -447,47 +442,30 @@ class MultiHeadedAttention(nn.Module):
         # mask has size: (batch_size, seq_len, seq_len)
         # As described in the .tex, apply input masking to the softt)
         # Also apply dropout to the attention values.
-        self.v = []
-        self.q = []
-        self.k = []
-        self.complete_attention = torch.empty((0,0)).cuda()
-        for i in range(0,self.n_heads):
-            self.v.append(self.V[i](query)) #Q*W_v[i] + b_v
-            self.q.append(self.Q[i](query)) #Q*W_q[i] + b_q
-            self.k.append(self.K[i](query)) #Q*W_k[i] + b_k
-            self.complete_attention = torch.cat((self.complete_attention, self.attention(self.q[i],self.k[i],self.v[i], mask)), dim=2)
+        # Split the fully connected layer into 16 attention heads.
+        self.v = self.V(value).view(value.shape[0], -1, self.n_heads, self.d_k).transpose(1, 2)
+        self.q = self.K(key).view(key.shape[0], -1, self.n_heads, self.d_k).transpose(1, 2)
+        self.k = self.Q(query).view(query.shape[0], -1, self.n_heads, self.d_k).transpose(1, 2)
+        mask = mask.unsqueeze(1)
+        a = self.attention(self.q, self.k, self.v, mask)
+        a = a.transpose(1, 2).contiguous().view(query.shape[0], -1, self.n_units)
+        self.o = self.O(a)
+        return self.o  # size: (batch_size, seq_len, self.n_units)
 
-        self.o = self.O(self.complete_attention) # Attention = concat(Attention[1] ... Attention[n]*W_o + b_o)
-        return self.o# size: (batch_size, seq_len, self.n_units)
-
-    def stable_softmax(self, x, s): #X is the input vector, s is the dropout mask
-        s = s.float() #128 x 35 x 35
-
-        #This implentation had crazy validation / train ppl. epoch: 21    train ppl: 1.1572353641563802    val ppl: 1.4495772582466449.
-        #It acts as if there was not mask at all, and the predictions are made using all the 35 words instead of only the previous words.
-        #x_tilde = x * s - 1e-9*(1-s)
-
-        #Implementation of the mask, as specified in the paper:
-        #x_tilde = x.masked_fill(s==0, -float("inf")) #Paper is clear on the fact the the masked value should be -inf before applying the softmax https://arxiv.org/pdf/1706.03762.pdf
-
-        #Appently I just did a typo. But the formula x * s is clearly not equivalent to this one.
-        x_tilde = x * s - 1e9*(1-s)
-
-        #According to the latest post in slack, we should use torch.softmax.
-        result = torch.nn.functional.softmax(x_tilde, dim=2)
-        #exp_x_tilde = torch.exp(x_tilde)
-        #sum_x_tilde = torch.sum(exp_x_tilde,dim=2)
-        #sum_x_tilde = sum_x_tilde.unsqueeze(dim=2)
-        #result = exp_x_tilde / sum_x_tilde
+    def stable_softmax(self, x, s):  # X is the input vector, s is the dropout mask
+        s = s.float()  # 128 x 35 x 35
+        x_tilde = x * s - 1e9 * (1 - s)
+        result = torch.nn.functional.softmax(x_tilde, dim=-1)
         return result
 
     def attention(self, Q, K, V, s):
-        K_t = K.transpose(1,2)
-        qkt_on_dk = torch.matmul(Q, K_t)/math.sqrt(self.d_k)
-        qkt_on_dk_ss = self.stable_softmax(qkt_on_dk,s)
+        K_t = K.transpose(-2, -1)
+        qkt_on_dk = torch.matmul(Q, K_t) / math.sqrt(self.d_k)
+        qkt_on_dk_ss = self.stable_softmax(qkt_on_dk, s)
         qkt_on_dk_ss = self.dropout(qkt_on_dk_ss)
-        res = torch.matmul(qkt_on_dk_ss,V)
+        res = torch.matmul(qkt_on_dk_ss, V)
         return res
+
 
 
 # ----------------------------------------------------------------------------------

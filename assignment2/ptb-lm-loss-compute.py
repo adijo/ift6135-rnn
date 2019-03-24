@@ -1,83 +1,6 @@
 #!/bin/python
 # coding: utf-8
 
-# Code outline/scaffold for 
-# ASSIGNMENT 2: RNNs, Attention, and Optimization
-# By Tegan Maharaj, David Krueger, and Chin-Wei Huang
-# IFT6135 at University of Montreal
-# Winter 2019
-#
-# based on code from:
-#    https://github.com/deeplearningathome/pytorch-language-model/blob/master/reader.py
-#    https://github.com/ceshine/examples/blob/master/word_language_model/main.py
-#    https://github.com/teganmaharaj/zoneout/blob/master/zoneout_word_ptb.py
-#    https://github.com/harvardnlp/annotated-transformer
-
-# GENERAL INSTRUCTIONS: 
-#    - ! IMPORTANT! 
-#      Unless we're otherwise notified we will run exactly this code, importing 
-#      your models from models.py to test them. If you find it necessary to 
-#      modify or replace this script (e.g. if you are using TensorFlow), you 
-#      must justify this decision in your report, and contact the TAs as soon as 
-#      possible to let them know. You are free to modify/add to this script for 
-#      your own purposes (e.g. monitoring, plotting, further hyperparameter 
-#      tuning than what is required), but remember that unless we're otherwise 
-#      notified we will run this code as it is given to you, NOT with your 
-#      modifications.
-#    - We encourage you to read and understand this code; there are some notes 
-#      and comments to help you.
-#    - Typically, all of your code to submit should be written in models.py; 
-#      see further instructions at the top of that file / in TODOs.
-#          - RNN recurrent unit 
-#          - GRU recurrent unit
-#          - Multi-head attention for the Transformer
-#    - Other than this file and models.py, you will probably also write two 
-#      scripts. Include these and any other code you write in your git repo for 
-#      submission:
-#          - Plotting (learning curves, loss w.r.t. time, gradients w.r.t. hiddens)
-#          - Loading and running a saved model (computing gradients w.r.t. hiddens, 
-#            and for sampling from the model)
-
-# PROBLEM-SPECIFIC INSTRUCTIONS:   
-#    - For Problems 1-3, paste the code for the RNN, GRU, and Multi-Head attention 
-#      respectively in your report, in a monospace font.
-#    - For Problem 4.1 (model comparison), the hyperparameter settings you should run are as follows:
-#          --model=RNN --optimizer=ADAM --initial_lr=0.0001 --batch_size=20 --seq_len=35 --hidden_size=1500 --num_layers=2 --dp_keep_prob=0.35 --save_best
-#          --model=GRU --optimizer=SGD_LR_SCHEDULE --initial_lr=10 --batch_size=20 --seq_len=35 --hidden_size=1500 --num_layers=2 --dp_keep_prob=0.35 --save_best
-#          --model=TRANSFORMER --optimizer=SGD_LR_SCHEDULE --initial_lr=20 --batch_size=128 --seq_len=35 --hidden_size=512 --num_layers=6 --dp_keep_prob=0.9 --save_best
-#    - In those experiments, you should expect to see approximately the following
-#      perplexities:
-#                  RNN: train:  120  val: 157
-#                  GRU: train:   65  val: 104
-#          TRANSFORMER:  train:  67  val: 146
-#    - For Problem 4.2 (exploration of optimizers), you will make use of the 
-#      experiments from 4.1, and should additionally run the following experiments:
-#          --model=RNN --optimizer=SGD --initial_lr=0.0001 --batch_size=20 --seq_len=35 --hidden_size=1500 --num_layers=2 --dp_keep_prob=0.35 
-#          --model=GRU --optimizer=SGD --initial_lr=10 --batch_size=20 --seq_len=35 --hidden_size=1500 --num_layers=2 --dp_keep_prob=0.35
-#          --model=TRANSFORMER --optimizer=SGD --initial_lr=20 --batch_size=128 --seq_len=35 --hidden_size=512 --num_layers=6 --dp_keep_prob=.9
-#          --model=RNN --optimizer=SGD_LR_SCHEDULE --initial_lr=1 --batch_size=20 --seq_len=35 --hidden_size=512 --num_layers=2 --dp_keep_prob=0.35
-#          --model=GRU --optimizer=ADAM --initial_lr=0.0001 --batch_size=20 --seq_len=35 --hidden_size=1500 --num_layers=2 --dp_keep_prob=0.35
-#          --model=TRANSFORMER --optimizer=ADAM --initial_lr=0.001 --batch_size=128 --seq_len=35 --hidden_size=512 --num_layers=2 --dp_keep_prob=.9
-#    - For Problem 4.3 (exloration of hyperparameters), do your best to get 
-#      better validation perplexities than the settings given for 4.1. You may 
-#      try any combination of the hyperparameters included as arguments in this 
-#      script's ArgumentParser, but do not implement any additional 
-#      regularizers/features. You may (and will probably want to) run a lot of 
-#      different things for just 1-5 epochs when you are trying things out, but 
-#      you must report at least 3 experiments on each architecture that have run
-#      for at least 40 epochs.
-#    - For Problem 5, perform all computations / plots based on saved models 
-#      from Problem 4.1. NOTE this means you don't have to save the models for 
-#      your exploration, which can make things go faster. (Of course
-#      you can still save them if you like; just add the flag --save_best). 
-#    - For Problem 5.1, you can modify the loss computation in this script 
-#      (search for "LOSS COMPUTATION" to find the appropriate line. Remember to 
-#      submit your code.
-#    - For Problem 5.3, you must implement the generate method of the RNN and 
-#      GRU.  Implementing this method is not considered part of problems 1/2 
-#      respectively, and will be graded as part of Problem 5.3
-
-
 import argparse
 import time
 import collections
@@ -87,27 +10,17 @@ import torch
 import torch.nn
 from torch.autograd import Variable
 import torch.nn as nn
-import numpy
-np = numpy
-
-# NOTE ==============================================
-# This is where your models are imported
-from models_grad import RNN, GRU 
+import numpy as np
+from models_grad import RNN, GRU
 from models_grad import make_model as TRANSFORMER
 
-
-##############################################################################
-#
-# ARG PARSING AND EXPERIMENT SETUP
-#
-##############################################################################
 
 parser = argparse.ArgumentParser(description='PyTorch Penn Treebank Language Modeling')
 
 # Arguments you may need to set to run different experiments in 4.1 & 4.2.
 parser.add_argument('--data', type=str, default='data',
                     help='location of the data corpus')
-parser.add_argument('--model', type=str, default='GRU',
+parser.add_argument('--model', type=str, default='TRANSFORMER',
                     help='type of recurrent net (RNN, GRU, TRANSFORMER)')
 parser.add_argument('--optimizer', type=str, default='SGD_LR_SCHEDULE',
                     help='optimization algo to use; SGD, SGD_LR_SCHEDULE, ADAM')
@@ -117,7 +30,7 @@ parser.add_argument('--batch_size', type=int, default=20,
                     help='size of one minibatch')
 parser.add_argument('--initial_lr', type=float, default=20.0,
                     help='initial learning rate')
-parser.add_argument('--hidden_size', type=int, default=1500,
+parser.add_argument('--hidden_size', type=int, default=512,
                     help='size of hidden layers. IMPORTANT: for the transformer\
                     this must be a multiple of 16.')
 parser.add_argument('--save_best', action='store_true',
@@ -367,25 +280,26 @@ def repackage_hidden(h):
         return tuple(repackage_hidden(v) for v in h)
 
 
-def run_epoch(model, data, is_train=False, lr=1.0):
+def run_epoch(model, data):
     """
     One epoch of training/validation (depending on flag is_train).
     """
-    if is_train:
-        model.train()
-    else:
-        model.eval()
-    model.load_state_dict(torch.load('saved_model.pt', map_location="cpu"))
-    if args.model != 'TRANSFORMER':
-        hidden = model.init_hidden()
-        hidden = hidden.to(device)
-
-    # LOOP THROUGH MINIBATCHES
+    model.eval()
+    state_dict = torch.load('saved_model.pt', map_location="cpu")
+    model.load_state_dict(state_dict)
+    total_loss = np.zeros(model.seq_len)
+    steps = 0
+    # LOOP THROUGH MINI BATCHES
     for step, (x, y) in enumerate(ptb_iterator(data, model.batch_size, model.seq_len)):
+        steps += 1
+        if args.model != 'TRANSFORMER':
+            hidden = model.init_hidden()
+            hidden = hidden.to(device)
+
         if args.model == 'TRANSFORMER':
             batch = Batch(torch.from_numpy(x).long().to(device))
             model.zero_grad()
-            outputs = model.forward(batch.data, batch.mask).transpose(1,0)
+            outputs = model.forward(batch.data, batch.mask).transpose(1, 0)
             # print ("outputs.shape", outputs.shape)
         else:
             inputs = torch.from_numpy(x.astype(np.int64)).transpose(0, 1).contiguous().to(device)#.cuda()
@@ -394,48 +308,24 @@ def run_epoch(model, data, is_train=False, lr=1.0):
             outputs, hidden = model(inputs, hidden)
 
         targets = torch.from_numpy(y.astype(np.int64)).transpose(0, 1).contiguous().to(device)#.cuda()
-        tt = torch.squeeze(targets.view(-1, model.batch_size * model.seq_len))
+        total_loss += np.array([loss_fn(outputs[i], targets[i]).item() for i in range(len(outputs))])
 
-        # LOSS COMPUTATION
-        # This line currently averages across all the sequences in a mini-batch 
-        # and all time-steps of the sequences.
-        # For problem 5.3, you will (instead) need to compute the average loss 
-        # at each time-step separately
-        last_seq_logits = outputs[-1]
-        last_seq_targets = targets[-1]
-        grad_loss = loss_fn(last_seq_logits, last_seq_targets)
-
-        grad_loss.backward()
-        print(model.calculate_grad_norms())
-        break
-         
-
+    total_loss /= float(steps)
+    print(total_loss)
 ###############################################################################
 #
 # RUN MAIN LOOP (TRAIN AND VAL)
 #
 ###############################################################################
 
-print("\n########## Running Main Loop ##########################")
-train_ppls = []
-train_losses = []
-val_ppls = []
-val_losses = []
-best_val_so_far = np.inf
-epochs_end_time = []
 
+print("\n########## Running Main Loop ##########################")
 # Gradient compute
 num_epochs = 1
 
 # MAIN LOOP
-t0 = time.time()
-for epoch in range(num_epochs):
-    t0_epoch = time.time()
-    print('\nEPOCH '+str(epoch)+' ------------------')
-    if args.optimizer == 'SGD_LR_SCHEDULE':
-        lr_decay = lr_decay_base ** max(epoch - m_flat_lr, 0)
-        lr = lr * lr_decay # decay lr if it is time
 
-    # RUN MODEL ON TRAINING DATA
-    run_epoch(model, train_data, True, lr)
+for epoch in range(num_epochs):
+    # RUN MODEL ON VALID DATA
+    run_epoch(model, valid_data)
 
