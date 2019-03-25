@@ -80,9 +80,9 @@ class RNN(nn.Module):
         self.embedding = nn.Embedding(vocab_size, emb_size)
 
         self.FirstHidden_input = nn.Linear(emb_size, hidden_size)
-        self.FirstHidden_hidden = nn.Linear(hidden_size, hidden_size, bias=False)
+        self.FirstHidden_hidden = nn.Linear(hidden_size, hidden_size)
 
-        sublayer = nn.ModuleList([nn.Linear(hidden_size, hidden_size, bias=False), nn.Linear(hidden_size, hidden_size)])
+        sublayer = nn.ModuleList([nn.Linear(hidden_size, hidden_size), nn.Linear(hidden_size, hidden_size)])
         self.hidden_layers = clones(sublayer, self.num_layers - 1)
 
         self.Wy = nn.Linear(hidden_size, vocab_size)
@@ -98,7 +98,7 @@ class RNN(nn.Module):
         initrange = 0.1
         if type(m) == nn.Linear:
             torch.nn.init.uniform_(m.weight, -math.sqrt(1 / self.hidden_size), math.sqrt(1 / self.hidden_size))
-        if type(m) == nn.Linear:
+        if type(m) == nn.Linear and m.bias is not None:
             torch.nn.init.uniform_(m.bias, -math.sqrt(1 / self.hidden_size), math.sqrt(1 / self.hidden_size))
         if type(m) == nn.Embedding:
             torch.nn.init.uniform_(m.weight, -initrange, initrange)
@@ -255,20 +255,20 @@ class GRU(nn.Module):
         self.embedding = nn.Embedding(vocab_size, emb_size)
 
         self.First_Wr = nn.Linear(emb_size, hidden_size)
-        self.First_Ur = nn.Linear(hidden_size, hidden_size, bias=False)
+        self.First_Ur = nn.Linear(hidden_size, hidden_size)
 
         self.First_Wz = nn.Linear(emb_size, hidden_size)
-        self.First_Uz = nn.Linear(hidden_size, hidden_size, bias=False)
+        self.First_Uz = nn.Linear(hidden_size, hidden_size)
 
         self.First_Wh = nn.Linear(emb_size, hidden_size)
-        self.First_Uh = nn.Linear(hidden_size, hidden_size, bias=False)
+        self.First_Uh = nn.Linear(hidden_size, hidden_size)
 
         sublayer = nn.ModuleList([nn.Linear(hidden_size, hidden_size),
-                                  nn.Linear(hidden_size, hidden_size, bias=False),
                                   nn.Linear(hidden_size, hidden_size),
-                                  nn.Linear(hidden_size, hidden_size, bias=False),
                                   nn.Linear(hidden_size, hidden_size),
-                                  nn.Linear(hidden_size, hidden_size, bias=False)])
+                                  nn.Linear(hidden_size, hidden_size),
+                                  nn.Linear(hidden_size, hidden_size),
+                                  nn.Linear(hidden_size, hidden_size)])
 
         self.hidden_layers = clones(sublayer, self.num_layers - 1)
 
@@ -281,7 +281,7 @@ class GRU(nn.Module):
         initrange = 0.1
         if type(m) == nn.Linear:
             torch.nn.init.uniform_(m.weight, -math.sqrt(1 / self.hidden_size), math.sqrt(1 / self.hidden_size))
-        if type(m) == nn.Linear:
+        if type(m) == nn.Linear and m.bias is not None:
             torch.nn.init.uniform_(m.bias, -math.sqrt(1 / self.hidden_size), math.sqrt(1 / self.hidden_size))
         if type(m) == nn.Embedding:
             torch.nn.init.uniform_(m.weight, -initrange, initrange)
@@ -290,9 +290,9 @@ class GRU(nn.Module):
 
     def init_hidden(self):
         # TODO ========================
-        self.inititial_hidden = torch.zeros(self.num_layers, self.batch_size, self.hidden_size)
+        self.initial_hidden = torch.zeros(self.num_layers, self.batch_size, self.hidden_size)
 
-        return self.inititial_hidden
+        return self.initial_hidden
 
     def forward(self, inputs, hidden):
 
